@@ -17,8 +17,10 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  detect-extensions:
     runs-on: ubuntu-latest
+    outputs:
+      extensions: ${{ steps.detect.outputs.extensions }}
 
     steps:
       - name: Checkout repository
@@ -26,24 +28,45 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Detect changed extension
+      - name: Detect changed extensions
         id: detect
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            EXTENSION="${{ inputs.extension }}"
-            echo "Extension manually specified: $EXTENSION"
+            EXTENSIONS='["${{ inputs.extension }}"]'
+            echo "Extension manually specified: ${{ inputs.extension }}"
           else
-            # Detect which manifest.json changed
-            CHANGED_FILE=$(git diff --name-only HEAD~1 HEAD | grep 'manifest.json' | head -1)
-            if [ -z "$CHANGED_FILE" ]; then
+            # Detect all manifest.json files that changed
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep 'manifest.json' || true)
+            if [ -z "$CHANGED_FILES" ]; then
               echo "No manifest.json changes detected"
               exit 1
             fi
-            EXTENSION=$(dirname "$CHANGED_FILE")
-            echo "Detected extension from changed file: $EXTENSION"
+
+            # Extract extension directories and format as JSON array
+            EXTENSIONS=$(echo "$CHANGED_FILES" | while read file; do
+              dirname "$file"
+            done | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+            echo "Detected extensions from changed files: $EXTENSIONS"
           fi
 
-          # Validate extension exists
+          echo "extensions=$EXTENSIONS" >> $GITHUB_OUTPUT
+
+  release:
+    needs: detect-extensions
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        extension: ${{ fromJson(needs.detect-extensions.outputs.extensions) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate extension
+        run: |
+          EXTENSION="${{ matrix.extension }}"
+
           if [ ! -d "$EXTENSION" ]; then
             echo "Error: Extension directory '$EXTENSION' not found"
             exit 1
@@ -54,12 +77,10 @@ jobs:
             exit 1
           fi
 
-          echo "extension=$EXTENSION" >> $GITHUB_OUTPUT
-
       - name: Extract version from manifest
         id: version
         run: |
-          EXTENSION="${{ steps.detect.outputs.extension }}"
+          EXTENSION="${{ matrix.extension }}"
           VERSION=$(jq -r '.version' "$EXTENSION/manifest.json")
 
           if [ -z "$VERSION" ] || [ "$VERSION" == "null" ]; then
@@ -72,7 +93,7 @@ jobs:
 
       - name: Create extension zip
         run: |
-          EXTENSION="${{ steps.detect.outputs.extension }}"
+          EXTENSION="${{ matrix.extension }}"
           VERSION="${{ steps.version.outputs.version }}"
           ZIP_NAME="${EXTENSION}-v${VERSION}.zip"
 
@@ -86,10 +107,10 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.detect.outputs.extension }}-v${{ steps.version.outputs.version }}
-          name: ${{ steps.detect.outputs.extension }} v${{ steps.version.outputs.version }}
+          tag_name: ${{ matrix.extension }}-v${{ steps.version.outputs.version }}
+          name: ${{ matrix.extension }} v${{ steps.version.outputs.version }}
           body: |
-            Release of **${{ steps.detect.outputs.extension }}** version ${{ steps.version.outputs.version }}
+            Release of **${{ matrix.extension }}** version ${{ steps.version.outputs.version }}
 
             ## Installation
             1. Download the zip file below
