@@ -1,0 +1,38 @@
+body {
+    font-family: Arial, sans-serif;
+    width: 300px;
+    padding: 10px;
+}
+
+h1 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+#rules {
+    margin-top: 10px;
+}
+
+#rule-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+#rule-list li {
+    margin-bottom: 5px;
+}
+
+#selector-input {
+    width: calc(100% - 22px);
+    padding: 5px;
+}
+
+#buttons {
+    display: flex;
+    justify-content: space-between;
+}
+button {
+    padding: 5px 10px;
+    margin-top: 5px;
+    border-radius: 3px;
+}

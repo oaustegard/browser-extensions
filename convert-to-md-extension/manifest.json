@@ -1,0 +1,30 @@
+  {
+    "manifest_version": 3,
+    "name": "Convert to Markdown with Jina ReaderLM",
+    "version": "1.0",
+    "description": "Converts the current page/pdf to Markdown, by invoking the Jina ReaderLM API (https://r.jina.ai), with optional v2 mode and clipboard copy.",
+    "permissions": [
+      "activeTab",
+      "scripting",
+      "storage",
+      "contextMenus",
+      "declarativeNetRequest",
+      "declarativeNetRequestWithHostAccess",
+      "clipboardWrite"
+    ],
+    "host_permissions": [
+      "<all_urls>"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "action": {
+      "default_icon": "icon.png",
+      "default_title": "Convert to Markdown with Jina ReaderLM"
+    },
+    "options_page": "options.html",
+    "icons": {
+      "128": "icon.png"
+    }
+  }
+  
