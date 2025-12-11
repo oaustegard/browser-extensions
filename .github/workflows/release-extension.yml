@@ -1,0 +1,104 @@
+name: Release Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension:
+        description: 'Extension folder name to release'
+        required: true
+        type: string
+  push:
+    paths:
+      - '*/manifest.json'
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed extension
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            EXTENSION="${{ inputs.extension }}"
+            echo "Extension manually specified: $EXTENSION"
+          else
+            # Detect which manifest.json changed
+            CHANGED_FILE=$(git diff --name-only HEAD~1 HEAD | grep 'manifest.json' | head -1)
+            if [ -z "$CHANGED_FILE" ]; then
+              echo "No manifest.json changes detected"
+              exit 1
+            fi
+            EXTENSION=$(dirname "$CHANGED_FILE")
+            echo "Detected extension from changed file: $EXTENSION"
+          fi
+
+          # Validate extension exists
+          if [ ! -d "$EXTENSION" ]; then
+            echo "Error: Extension directory '$EXTENSION' not found"
+            exit 1
+          fi
+
+          if [ ! -f "$EXTENSION/manifest.json" ]; then
+            echo "Error: manifest.json not found in '$EXTENSION'"
+            exit 1
+          fi
+
+          echo "extension=$EXTENSION" >> $GITHUB_OUTPUT
+
+      - name: Extract version from manifest
+        id: version
+        run: |
+          EXTENSION="${{ steps.detect.outputs.extension }}"
+          VERSION=$(jq -r '.version' "$EXTENSION/manifest.json")
+
+          if [ -z "$VERSION" ] || [ "$VERSION" == "null" ]; then
+            echo "Error: Could not extract version from manifest.json"
+            exit 1
+          fi
+
+          echo "Version detected: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create extension zip
+        run: |
+          EXTENSION="${{ steps.detect.outputs.extension }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          ZIP_NAME="${EXTENSION}-v${VERSION}.zip"
+
+          cd "$EXTENSION"
+          zip -r "../$ZIP_NAME" . -x "*.git*" -x "*node_modules/*" -x "*.DS_Store"
+          cd ..
+
+          echo "Created: $ZIP_NAME"
+          echo "zip_name=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.detect.outputs.extension }}-v${{ steps.version.outputs.version }}
+          name: ${{ steps.detect.outputs.extension }} v${{ steps.version.outputs.version }}
+          body: |
+            Release of **${{ steps.detect.outputs.extension }}** version ${{ steps.version.outputs.version }}
+
+            ## Installation
+            1. Download the zip file below
+            2. Extract it to a folder
+            3. Open Chrome/Edge and go to `chrome://extensions/`
+            4. Enable "Developer mode"
+            5. Click "Load unpacked" and select the extracted folder
+          files: ${{ env.zip_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

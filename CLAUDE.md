@@ -23,17 +23,31 @@ When creating or modifying extensions:
 - Place icons, scripts, HTML, CSS, and assets within the extension folder
 - Don't create cross-extension dependencies
 
-## Building Extensions
+## Building and Releasing Extensions
 
-A GitHub Actions release workflow (TBD) will create zip files for each extension. The action will:
-1. Detect all extension folders in root
-2. Create a zip file per extension
-3. Attach zips to GitHub releases
+The GitHub Actions release workflow (`.github/workflows/release-extension.yml`) creates releases for individual extensions. The workflow:
 
-When asked to implement this:
-- Detect extensions by presence of `manifest.json` in root-level folders
-- Create distributable zips for unpacked browser loading
-- Make the workflow automatic on releases
+**Triggers:**
+- Automatically when a `manifest.json` file changes on main branch
+- Manually via workflow_dispatch with extension folder name input
+
+**Process:**
+1. Detects the extension (from changed file or manual input)
+2. Extracts version from `manifest.json`
+3. Creates a zip file of the extension folder
+4. Creates a GitHub release tagged as `{extension-name}-v{version}`
+5. Attaches the zip to the release
+
+**Release Tags:**
+- Format: `extension-name-v1.2.3`
+- Example: `my-extension-v1.0.0`
+- Each extension has independent versioning
+
+**Manual Release:**
+Use GitHub Actions UI to trigger manually:
+1. Go to Actions → Release Extension → Run workflow
+2. Enter the extension folder name
+3. Workflow creates release from current state
 
 ## Communication Guidelines
 
