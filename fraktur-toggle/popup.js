@@ -4,6 +4,11 @@ let currentTab = null;
 let currentHostname = '';
 let isEnabled = false;
 
+// Check if URL is valid for content scripts
+function isValidUrl(url) {
+  return url && (url.startsWith('http://') || url.startsWith('https://'));
+}
+
 // Get current tab and initialize
 async function initialize() {
   try {
@@ -15,14 +20,38 @@ async function initialize() {
       return;
     }
 
+    if (!isValidUrl(currentTab.url)) {
+      document.getElementById('currentSite').textContent = 'Cannot run on this page';
+      document.getElementById('toggleButton').disabled = true;
+      document.getElementById('rememberSite').disabled = true;
+      return;
+    }
+
     const url = new URL(currentTab.url);
     currentHostname = url.hostname;
     document.getElementById('currentSite').textContent = currentHostname;
 
+    // Ensure content script is injected
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: currentTab.id },
+        files: ['content.js']
+      });
+    } catch (e) {
+      // Content script may already be injected, continue
+    }
+
     // Get current state from content script
-    const response = await chrome.tabs.sendMessage(currentTab.id, { action: 'getState' });
-    isEnabled = response.enabled;
-    updateUI();
+    try {
+      const response = await chrome.tabs.sendMessage(currentTab.id, { action: 'getState' });
+      isEnabled = response.enabled;
+      updateUI();
+    } catch (error) {
+      // Content script not responding, assume disabled
+      console.warn('Could not get state from content script:', error);
+      isEnabled = false;
+      updateUI();
+    }
 
     // Check if site is saved in storage
     const result = await chrome.storage.sync.get([currentHostname]);
@@ -50,7 +79,7 @@ function updateUI() {
 
 // Toggle Fraktur on the page
 async function toggleFraktur() {
-  if (!currentTab) return;
+  if (!currentTab || !isValidUrl(currentTab.url)) return;
 
   try {
     const response = await chrome.tabs.sendMessage(currentTab.id, { action: 'toggle' });
@@ -64,6 +93,18 @@ async function toggleFraktur() {
     }
   } catch (error) {
     console.error('Toggle error:', error);
+    // Try to inject and retry once
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: currentTab.id },
+        files: ['content.js']
+      });
+      const response = await chrome.tabs.sendMessage(currentTab.id, { action: 'toggle' });
+      isEnabled = response.enabled;
+      updateUI();
+    } catch (retryError) {
+      console.error('Retry failed:', retryError);
+    }
   }
 }
 
