@@ -56,6 +56,21 @@ Use GitHub Actions UI to trigger manually:
 - **No explanations** - The chat log and diffs speak for themselves
 - Skip "what I did" recaps after completing work
 
+## Skills and Utilities
+
+The `skills/` folder contains reusable tools and frameworks for extension development:
+
+### Icon Creation (`skills/icon-creation/`)
+
+Framework for generating browser extension icons at multiple sizes. Use this when creating new extension icons:
+
+- **generate-icons.js** - Node.js script (requires `npm install canvas`) that generates PNG icons at 16x16, 32x32, 48x48, and 128x128
+- **icon.svg** - Template SVG you can modify for your design
+- **README.md** - Alternative generation methods (Inkscape, ImageMagick, online tools)
+- **USAGE.md** - Full usage documentation
+
+**Design tip:** Make primary icon elements large and bold. Extensions typically use a single 128x128 icon and let the browser resize it.
+
 ## Development Context
 
 - Each extension is independent

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Fraktur Toggle",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Toggle any webpage to Fraktur font with per-site memory",
   "permissions": [
     "activeTab",
@@ -12,21 +12,13 @@
     "<all_urls>"
   ],
   "action": {
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "32": "icons/icon32.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
+    "default_icon": "icons/icon128.png"
   },
   "background": {
     "service_worker": "background.js"
   },
   "options_page": "options.html",
   "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
-    "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "content_scripts": [
