@@ -1,83 +1,50 @@
-# CLAUDE.md - Browser Extensions Repository
+# CLAUDE.md - Instructions for AI Assistant
+
+**IMPORTANT**: This file contains imperative instructions for you (Claude). YOU are the audience. Write all content in CLAUDE.md as direct commands to future assistants, not as README documentation for humans.
 
 ## Repository Structure
 
-This repository contains a collection of browser extensions, organized with one extension per folder in the root directory.
+Understand that this repository contains browser extensions with one extension per folder in the root directory:
 
 ```
 browser-extensions/
 ├── extension-one/
 │   ├── manifest.json
-│   ├── icons/
-│   ├── scripts/
 │   └── ...
 ├── extension-two/
-│   ├── manifest.json
-│   ├── icons/
-│   ├── scripts/
 │   └── ...
-└── ...
 ```
 
-## Extension Organization
+## Extension Organization Rules
 
-Each extension should be self-contained within its own directory, including:
-- `manifest.json` - Extension manifest file (required)
-- Icons and assets
-- JavaScript files
-- HTML files (popup, options, etc.)
-- CSS stylesheets
-- Any extension-specific documentation
+When creating or modifying extensions:
+- Keep each extension self-contained in its own directory
+- Ensure every extension has a `manifest.json` file
+- Place icons, scripts, HTML, CSS, and assets within the extension folder
+- Don't create cross-extension dependencies
 
-## Development Workflow
+## Building Extensions
 
-### Local Development
+A GitHub Actions release workflow (TBD) will create zip files for each extension. The action will:
+1. Detect all extension folders in root
+2. Create a zip file per extension
+3. Attach zips to GitHub releases
 
-Each extension can be loaded directly into your browser in developer/unpacked mode:
+When asked to implement this:
+- Detect extensions by presence of `manifest.json` in root-level folders
+- Create distributable zips for unpacked browser loading
+- Make the workflow automatic on releases
 
-**Chrome/Edge:**
-1. Navigate to `chrome://extensions/` (or `edge://extensions/`)
-2. Enable "Developer mode" toggle
-3. Click "Load unpacked"
-4. Select the extension's folder from this repository
+## Communication Guidelines
 
-**Firefox:**
-1. Navigate to `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on"
-3. Select any file within the extension's folder (typically `manifest.json`)
+- **Be succinct** - Don't waste output tokens with post-commit summaries
+- **Concise PRs** - Keep PR descriptions brief
+- **No explanations** - The chat log and diffs speak for themselves
+- Skip "what I did" recaps after completing work
 
-### Building Extensions
+## Development Context
 
-**Status: TBD**
-
-A GitHub Actions release workflow will be implemented to automatically create distributable zip files for each extension. This will allow for:
-- Automated packaging of extensions
-- Version management
-- Easy distribution for local installation
-- Optional submission preparation for browser extension stores
-
-The release action will:
-1. Detect all extension folders in the root directory
-2. Create a zip file for each extension
-3. Attach the zip files to GitHub releases
-
-## Contributing
-
-When adding a new extension:
-1. Create a new folder in the repository root
-2. Ensure it contains a valid `manifest.json`
-3. Follow browser extension best practices
-4. Update this documentation if needed
-
-## Working with Claude
-
-When working on this repository:
-- **Be succinct** - Don't waste output tokens with post-commit summaries or "what I did" explanations
-- **Concise PRs** - Keep PR descriptions brief and to the point
-- The chat log and PR diffs speak for themselves
-
-## Notes
-
-- Extensions are primarily "vibe coded" - experimental and for learning purposes
-- Each extension is independent and can be developed/deployed separately
-- Manifest version (V2 vs V3) may vary by extension - check individual manifests
+- Extensions are experimental/"vibe coded"
+- Each extension is independent
+- Manifest versions (V2/V3) may vary by extension
+- Users will load extensions in developer/unpacked mode
