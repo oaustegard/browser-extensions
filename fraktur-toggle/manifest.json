@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Fraktur Toggle",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Toggle any webpage to Fraktur font with per-site memory",
   "permissions": [
     "activeTab",
