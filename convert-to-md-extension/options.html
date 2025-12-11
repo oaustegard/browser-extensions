@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Convert to Markdown with Jina ReaderLM: Options</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .option-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <img src="icon.png" height="64px" alt="Convert to Markdown"/>
+    <h1> Convert to Markdown with Jina ReaderLM</h1>
+    <h2>Options</h2>
+    <form id="options-form">
+      <div class="option-group">
+        <label>Jina ReaderLM Version:</label>
+        <label><input type="radio" name="mode" value="v1"> v1</label>
+        <label><input type="radio" name="mode" value="v2"> v2 (beta) -- more precise, but slower, limited, streamed output. <a href="https://jina.ai/news/readerlm-v2-frontier-small-language-model-for-html-to-markdown-and-json">(what's new)</a></label>
+      </div>
+      <div class="option-group">
+        <label>
+          <input type="checkbox" id="copy" name="copy">
+          Copy Markdown result to clipboard
+        </label>
+      </div>
+      <button type="submit">Save Options</button>
+      <span id="status" style="margin-left: 10px;"></span>
+    </form>
+    <script src="options.js"></script>
+  </body>
+</html>

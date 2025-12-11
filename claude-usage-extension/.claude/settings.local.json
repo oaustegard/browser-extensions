@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed:*)",
+      "Bash(xargs -I {} sh -c 'ls -lt ~/.claude/projects/{}/*.jsonl')",
+      "Bash(xargs -I {} sh -c 'echo \"\"\"\"{}\"\"\"\" | sed \"\"\"\"s|/c/|C:/|\"\"\"\" | sed \"\"\"\"s|/|\\\\\\\\\\\\\\\\|g\"\"\"\" && start \"\"\"\"\"\"\"\" \"\"\"\"{}\"\"\"\"')"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

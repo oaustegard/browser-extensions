@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "at-protocol",
+  "version": "1.0",
+  "description": "Opens at:// links in bsky.app by translating them to bsky URIs.",
+  "icons": {
+    "48": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "contextMenus",
+    "tabs"
+  ]
+}

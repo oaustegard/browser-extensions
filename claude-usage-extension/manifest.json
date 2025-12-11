@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Claude Usage Monitor",
+  "version": "1.0.0",
+  "description": "Monitor Claude.ai usage limits via dynamic icon badge",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://claude.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Claude Usage Monitor"
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

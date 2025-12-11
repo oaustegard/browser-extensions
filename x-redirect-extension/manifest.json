@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "X Redirects",
+  "version": "1.2",
+  "description": "Redirects x.com URLs to xcancel.com and xkcd.com to explainxkcd.com",
+  "permissions": ["declarativeNetRequest"],
+  "host_permissions": ["*://x.com/*", "*://www.x.com/*", "*://twitter.com/*", "*://www.twitter.com/*", "*://xkcd.com/*", "*://www.xkcd.com/*"],
+  "declarative_net_request": {
+    "rule_resources": [{
+      "id": "ruleset_1",
+      "enabled": true,
+      "path": "rules.json"
+    }]
+  },
+  "icons": {
+    "48": "icon.png"
+  }
+}

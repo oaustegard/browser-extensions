@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Custom Redirects",
+  "version": "2.1",
+  "description": "User-configurable URL redirects",
+  "permissions": ["declarativeNetRequest", "storage"],
+  "host_permissions": ["*://x.com/*", "*://www.x.com/*", "*://twitter.com/*", "*://www.twitter.com/*"],
+  "optional_host_permissions": ["*://*/*"],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

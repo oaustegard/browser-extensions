@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmarklet Runner - Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ Bookmarklet Runner Settings</h1>
+      <p class="subtitle">Configure your bookmarklet repository</p>
+    </header>
+
+    <main>
+      <form id="options-form">
+        <div class="form-group">
+          <label for="repo-owner">
+            GitHub Owner/Organization
+            <span class="hint">The user or organization that owns the repository</span>
+          </label>
+          <input
+            type="text"
+            id="repo-owner"
+            name="repoOwner"
+            placeholder="e.g., oaustegard"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="repo-name">
+            Repository Name
+            <span class="hint">The name of the repository containing bookmarklets</span>
+          </label>
+          <input
+            type="text"
+            id="repo-name"
+            name="repoName"
+            placeholder="e.g., bookmarklets"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="folder-path">
+            Folder Path (optional)
+            <span class="hint">Subfolder containing bookmarklets (leave empty for root)</span>
+          </label>
+          <input
+            type="text"
+            id="folder-path"
+            name="folderPath"
+            placeholder="e.g., demo-bookmarklets"
+          >
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+          <button type="button" id="reset-btn" class="btn btn-secondary">Reset to Defaults</button>
+        </div>
+
+        <div id="status" class="status hidden"></div>
+      </form>
+
+      <div class="info-section">
+        <h2>Repository Structure</h2>
+        <p>Your repository should contain JavaScript files with the <code>.js</code> extension. Each file should follow the bookmarklet format:</p>
+
+        <pre><code>javascript:
+/* @title: My Bookmarklet */
+/* @description: What it does */
+/* @domains: example.com, *jira* */
+(function() {
+  // Your code here
+})();</code></pre>
+
+        <h2>Metadata Tags</h2>
+        <ul class="metadata-list">
+          <li>
+            <strong>@title</strong> - Display name in the extension
+            <span class="optional">(optional, defaults to filename)</span>
+          </li>
+          <li>
+            <strong>@description</strong> - Brief description shown below the title
+            <span class="optional">(optional)</span>
+          </li>
+          <li>
+            <strong>@domains</strong> - Comma-separated list of domains where this bookmarklet should appear
+            <span class="optional">(optional, shows everywhere if omitted)</span>
+            <ul class="sub-list">
+              <li>Exact match: <code>github.com</code></li>
+              <li>Wildcard patterns: <code>*jira*</code>, <code>*confluence*</code></li>
+            </ul>
+          </li>
+        </ul>
+
+        <h2>README Documentation</h2>
+        <p>Add detailed documentation by creating a README file next to your bookmarklet:</p>
+        <ul>
+          <li><code>my_bookmarklet.js</code> → <code>my_bookmarklet_README.md</code></li>
+          <li>The extension will automatically show a 📖 link next to bookmarklets with README files</li>
+        </ul>
+
+        <h2>Auto-Grouping</h2>
+        <p>Bookmarklets with common prefixes are automatically grouped:</p>
+        <ul>
+          <li><code>utils_copy_title.js</code></li>
+          <li><code>utils_copy_url.js</code></li>
+          <li><code>utils_scroll_to_top.js</code></li>
+        </ul>
+        <p>These will appear in a collapsible "utils" group when there are 3 or more with the same prefix.</p>
+      </div>
+    </main>
+
+    <footer>
+      <p>
+        <a href="https://github.com/oaustegard/bookmarklet-runner-extension" target="_blank">Documentation</a>
+        •
+        <a href="https://github.com/oaustegard/bookmarklet-runner-extension/issues" target="_blank">Report Issue</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
