@@ -44,7 +44,6 @@ When asked to implement this:
 
 ## Development Context
 
-- Extensions are experimental/"vibe coded"
 - Each extension is independent
-- Manifest versions (V2/V3) may vary by extension
+- **Always use Manifest V3** for all extensions
 - Users will load extensions in developer/unpacked mode
