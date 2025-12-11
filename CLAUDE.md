@@ -69,6 +69,13 @@ When adding a new extension:
 3. Follow browser extension best practices
 4. Update this documentation if needed
 
+## Working with Claude
+
+When working on this repository:
+- **Be succinct** - Don't waste output tokens with post-commit summaries or "what I did" explanations
+- **Concise PRs** - Keep PR descriptions brief and to the point
+- The chat log and PR diffs speak for themselves
+
 ## Notes
 
 - Extensions are primarily "vibe coded" - experimental and for learning purposes
