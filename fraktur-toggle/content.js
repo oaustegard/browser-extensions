@@ -71,8 +71,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Check storage on page load to see if this site should have Fraktur enabled
-chrome.storage.sync.get([hostname], (result) => {
-  if (result[hostname] === true) {
+chrome.storage.sync.get(['autoApplySites'], (result) => {
+  const autoApplySites = result.autoApplySites || [];
+  if (autoApplySites.includes(hostname)) {
     enableFraktur();
   }
 });
