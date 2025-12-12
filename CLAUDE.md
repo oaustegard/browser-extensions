@@ -56,14 +56,16 @@ Use GitHub Actions UI to trigger manually:
 - **No explanations** - The chat log and diffs speak for themselves
 - Skip "what I did" recaps after completing work
 
-## Skills and Utilities
+## Agent Skills
 
-The `skills/` folder contains reusable tools and frameworks for extension development:
+The `.claude/skills/` folder contains Agent Skills that extend Claude's capabilities for extension development. Skills are automatically discovered and invoked by Claude when relevant.
 
-### Icon Creation (`skills/icon-creation/`)
+### Icon Creation (`.claude/skills/icon-creation/`)
 
-Framework for generating browser extension icons at multiple sizes. Use this when creating new extension icons:
+Agent Skill for generating browser extension icons at multiple sizes. Claude will automatically use this when icon generation is needed.
 
+**Key files:**
+- **SKILL.md** - Agent Skill definition with instructions for Claude
 - **generate-icons.js** - Node.js script (requires `npm install canvas`) that generates PNG icons at 16x16, 32x32, 48x48, and 128x128
 - **icon.svg** - Template SVG you can modify for your design
 - **README.md** - Alternative generation methods (Inkscape, ImageMagick, online tools)
