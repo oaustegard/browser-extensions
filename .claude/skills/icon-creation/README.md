@@ -1,8 +1,16 @@
-# Icons
+# Icon Generation Methods
 
-To generate PNG icons from the SVG:
+Multiple methods for generating PNG icons at required browser extension sizes (16x16, 32x32, 48x48, 128x128):
 
-## Using Inkscape (recommended)
+## Using Node.js (Recommended)
+```bash
+npm install canvas
+node generate-icons.js "T"              # Single letter
+node generate-icons.js "🎨"             # Emoji
+node generate-icons.js "X" "#000" "#0f0" # Custom colors
+```
+
+## Using Inkscape
 ```bash
 inkscape icon.svg -w 16 -h 16 -o icon16.png
 inkscape icon.svg -w 32 -h 32 -o icon32.png
@@ -26,5 +34,3 @@ Upload `icon.svg` to https://cloudconvert.com/svg-to-png and export at different
 2. Right-click → Inspect
 3. In console, use canvas to export at different sizes
 4. Or simply take screenshots at the required sizes
-
-The icon is a stylized Fraktur "𝔉" on a dark background.

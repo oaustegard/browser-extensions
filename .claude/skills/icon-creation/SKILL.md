@@ -17,10 +17,19 @@ Use this Skill when:
 
 ## Quick Start
 
-1. **Create or edit icon.svg** - Design your icon in SVG format
-2. **Generate PNGs** using one of these methods:
-   - Node.js: `node generate-icons.js` (requires: `npm install canvas`)
-   - See [README.md](README.md) for alternative methods (Inkscape, ImageMagick, online tools)
+### Option 1: Generate from text/emoji (fastest)
+
+```bash
+npm install canvas
+node generate-icons.js "A"              # Single letter
+node generate-icons.js "🎨"             # Emoji
+node generate-icons.js "X" "#000" "#0f0" # Custom colors
+```
+
+### Option 2: Create custom SVG design
+
+1. **Edit icon.svg** - Modify the text element or create custom graphics
+2. **Generate PNGs**: See [README.md](README.md) for conversion methods (Inkscape, ImageMagick, online tools)
 
 ## Icon Size Requirements
 
@@ -53,17 +62,42 @@ For Inkscape, ImageMagick, or online tools, see [README.md](README.md).
 - [USAGE.md](USAGE.md) - Full usage documentation and framework details
 - [README.md](README.md) - Alternative generation methods
 
-## Example Workflow
+## Example Workflows
 
-1. Copy `icon.svg` from this directory to your extension folder
-2. Edit the SVG to match your extension's purpose
-3. Run `node generate-icons.js` in the extension directory
-4. Reference the generated icons in your `manifest.json`:
-   ```json
-   "icons": {
-     "16": "icon16.png",
-     "32": "icon32.png",
-     "48": "icon48.png",
-     "128": "icon128.png"
-   }
-   ```
+### Text/Emoji Icon
+```bash
+cd my-extension
+npm install canvas
+node path/to/generate-icons.js "📧"  # Email icon
+```
+
+### Custom SVG Icon
+1. Copy and edit `icon.svg` from this skill directory
+2. Modify the `<text>` element or add custom graphics
+3. Convert using Inkscape/ImageMagick (see [README.md](README.md))
+
+### Reference in manifest.json
+```json
+"icons": {
+  "16": "icon16.png",
+  "32": "icon32.png",
+  "48": "icon48.png",
+  "128": "icon128.png"
+}
+```
+
+## Customization Examples
+
+**Single letter icons:**
+- `node generate-icons.js "A"`
+- `node generate-icons.js "T"`
+- `node generate-icons.js "𝔉"` (Unicode characters)
+
+**Emoji icons:**
+- `node generate-icons.js "🎨"` (art/design)
+- `node generate-icons.js "📝"` (notes/writing)
+- `node generate-icons.js "🔧"` (tools/settings)
+
+**Custom colors:**
+- `node generate-icons.js "X" "#1a1a1a" "#00ff00"` (dark bg, green text)
+- `node generate-icons.js "!" "#ff0000" "#ffffff"` (red bg, white text)
