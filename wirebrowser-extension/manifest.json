@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Wirebrowser Lite",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Heap inspection and BDHS for the current page",
   "permissions": [
     "debugger",
