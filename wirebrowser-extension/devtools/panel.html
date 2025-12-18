@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Wirebrowser</title>
+  <style>
+    :root {
+      --bg: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d2d;
+      --text: #cccccc;
+      --text-muted: #808080;
+      --accent: #007acc;
+      --accent-hover: #1a8ad4;
+      --border: #3c3c3c;
+      --success: #4ec9b0;
+      --warning: #dcdcaa;
+      --error: #f14c4c;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 12px;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    
+    .tab:hover {
+      color: var(--text);
+      background: var(--bg-tertiary);
+    }
+    
+    .tab.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+    
+    /* Panels */
+    .panels {
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .panel {
+      display: none;
+      height: 100%;
+      overflow: auto;
+      padding: 12px;
+    }
+    
+    .panel.active {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    
+    label {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    
+    input[type="text"], input[type="number"] {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    
+    input[type="text"]:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+    
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.15s;
+    }
+    
+    button:hover {
+      background: var(--accent-hover);
+    }
+    
+    button:disabled {
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+    
+    button.danger {
+      background: var(--error);
+    }
+    
+    button.secondary {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+    }
+    
+    /* Results */
+    .results {
+      flex: 1;
+      overflow: auto;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    
+    .result-item {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    
+    .result-item:hover {
+      background: var(--bg-tertiary);
+    }
+    
+    .result-item:last-child {
+      border-bottom: none;
+    }
+    
+    .result-path {
+      font-family: "Fira Code", "Consolas", monospace;
+      color: var(--success);
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    
+    .result-class {
+      color: var(--warning);
+      font-size: 10px;
+      margin-bottom: 4px;
+    }
+    
+    .result-preview {
+      font-family: "Fira Code", "Consolas", monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+      max-height: 100px;
+      overflow: hidden;
+    }
+    
+    .result-similarity {
+      display: inline-block;
+      background: var(--accent);
+      color: white;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      margin-left: 8px;
+    }
+    
+    /* Status */
+    .status-bar {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 6px 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .status-bar .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+    
+    .status-indicator.connected {
+      background: var(--success);
+    }
+    
+    .status-indicator.running {
+      background: var(--warning);
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* BDHS specific */
+    .bdhs-status {
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    
+    .bdhs-status h3 {
+      margin-bottom: 8px;
+      color: var(--warning);
+    }
+    
+    .bdhs-instruction {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--text-muted);
+    }
+    
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" data-panel="snapshot">Heap Snapshot</div>
+      <div class="tab" data-panel="live">Live Objects</div>
+      <div class="tab" data-panel="bdhs">Origin Trace (BDHS)</div>
+    </div>
+    
+    <div class="panels">
+      <!-- Heap Snapshot Panel -->
+      <div class="panel active" id="panel-snapshot">
+        <div class="controls">
+          <button id="btn-capture">Capture Snapshot</button>
+          <div class="control-group">
+            <label>Property:</label>
+            <input type="text" id="snap-prop" placeholder="key name">
+          </div>
+          <div class="control-group">
+            <label>Value:</label>
+            <input type="text" id="snap-value" placeholder="value">
+          </div>
+          <div class="control-group">
+            <label>Class:</label>
+            <input type="text" id="snap-class" placeholder="ClassName">
+          </div>
+          <button id="btn-search-snap">Search</button>
+        </div>
+        
+        <div class="controls">
+          <div class="control-group">
+            <input type="checkbox" id="snap-similarity">
+            <label for="snap-similarity">Similarity search</label>
+          </div>
+          <div class="control-group">
+            <label>Threshold:</label>
+            <input type="number" id="snap-threshold" value="0.7" min="0" max="1" step="0.1" style="width: 60px">
+          </div>
+        </div>
+        
+        <div class="results" id="snap-results">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <div>Capture a snapshot to begin</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Live Objects Panel -->
+      <div class="panel" id="panel-live">
+        <div class="controls">
+          <div class="control-group">
+            <label>Property:</label>
+            <input type="text" id="live-prop" placeholder="key name">
+          </div>
+          <div class="control-group">
+            <label>Value:</label>
+            <input type="text" id="live-value" placeholder="value">
+          </div>
+          <div class="control-group">
+            <label>Class:</label>
+            <input type="text" id="live-class" placeholder="ClassName">
+          </div>
+          <button id="btn-search-live">Search Live</button>
+        </div>
+        
+        <div class="results" id="live-results">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            </svg>
+            <div>Search for live objects in memory</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- BDHS Panel -->
+      <div class="panel" id="panel-bdhs">
+        <div class="bdhs-status" id="bdhs-status">
+          <h3>Origin Trace (BDHS)</h3>
+          <p>Find the user-land function that creates or mutates a target value.</p>
+          <p class="bdhs-instruction">Configure search criteria, arm the scan, then click an element on the page.</p>
+        </div>
+        
+        <div class="controls">
+          <div class="control-group">
+            <label>Property:</label>
+            <input type="text" id="bdhs-prop" placeholder="key name">
+          </div>
+          <div class="control-group">
+            <label>Value:</label>
+            <input type="text" id="bdhs-value" placeholder="value to find">
+          </div>
+          <div class="control-group">
+            <label>Class:</label>
+            <input type="text" id="bdhs-class" placeholder="ClassName">
+          </div>
+        </div>
+        
+        <div class="controls">
+          <div class="control-group">
+            <label>Tolerance before:</label>
+            <input type="number" id="bdhs-before" value="6" min="0" max="20" style="width: 50px">
+          </div>
+          <div class="control-group">
+            <label>after:</label>
+            <input type="number" id="bdhs-after" value="15" min="0" max="50" style="width: 50px">
+          </div>
+          <button id="btn-bdhs-start">Arm BDHS</button>
+          <button id="btn-bdhs-stop" class="danger" disabled>Stop</button>
+        </div>
+        
+        <div class="results" id="bdhs-results">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <div>Configure and arm to begin tracing</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="status-bar">
+      <div class="status">
+        <div class="status-indicator" id="status-indicator"></div>
+        <span id="status-text">Not attached</span>
+      </div>
+      <div id="status-info"></div>
+    </div>
+  </div>
+  
+  <script src="panel.js"></script>
+</body>
+</html>

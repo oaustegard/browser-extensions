@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Wirebrowser Lite",
+  "version": "0.1.0",
+  "description": "Heap inspection and BDHS for the current page",
+  "permissions": [
+    "debugger",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "devtools_page": "devtools/devtools.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ]
+}
