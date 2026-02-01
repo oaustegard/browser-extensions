@@ -140,10 +140,10 @@ function generateIcon(fiveHourPct, weeklyPct, size) {
   /* Color function based on percentage */
   const getColor = (pct) => pct < 50 ? '#10b981' : pct < 80 ? '#f59e0b' : '#ef4444';
 
-  /* Scale dimensions based on icon size */
+  /* Bars must fit in top ~40% of icon (badge covers bottom half) */
   const padding = size <= 16 ? 1 : 2;
-  const barHeight = size <= 16 ? 3 : Math.floor(size * 0.25);
-  const gap = size <= 16 ? 2 : Math.floor(size * 0.15);
+  const barHeight = size <= 16 ? 2 : 3;
+  const gap = size <= 16 ? 1 : 2;
   const barWidth = size - (padding * 2);
 
   /* Dark background for contrast */
@@ -232,11 +232,29 @@ async function updateBadge(data) {
     ? new Date(fiveHourResets).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     : 'Unknown';
   const sevenDayResetStr = sevenDayResets
-    ? new Date(sevenDayResets).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    ? new Date(sevenDayResets).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true })
     : 'Unknown';
 
+  /* Calculate expected usage for tooltip explanation */
+  let weeklyStatusText = '';
+  if (sevenDayResets) {
+    const now = Date.now();
+    const resetTime = new Date(sevenDayResets).getTime();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const timeElapsedMs = weekMs - (resetTime - now);
+    const expectedPct = Math.round((timeElapsedMs / weekMs) * 100);
+    const diff = sevenDayPct - expectedPct;
+    if (diff > 5) {
+      weeklyStatusText = `\n⚠️ ${Math.abs(diff)}% over pace`;
+    } else if (diff < -5) {
+      weeklyStatusText = `\n✓ ${Math.abs(diff)}% under pace`;
+    } else {
+      weeklyStatusText = '\n✓ On pace';
+    }
+  }
+
   /* Set detailed tooltip with both usage periods */
-  const title = `Claude Usage Monitor\n5-hour: ${fiveHourPct}% (resets ${fiveHourResetStr})\nWeekly: ${sevenDayPct}% (resets ${sevenDayResetStr})`;
+  const title = `Claude Usage Monitor\n5-hour: ${fiveHourPct}% (resets ${fiveHourResetStr})\nWeekly: ${sevenDayPct}% (resets ${sevenDayResetStr})${weeklyStatusText}`;
   chrome.action.setTitle({ title });
 
   log(`Icon updated: 5hr=${fiveHourPct}%, weekly=${sevenDayPct}%`);
