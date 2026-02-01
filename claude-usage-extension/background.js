@@ -176,23 +176,26 @@ function generateIcon(percentage, size) {
 /* Update icon and badge with usage data */
 async function updateBadge(data) {
   const fiveHour = data.five_hour;
+  const sevenDay = data.seven_day;
 
   if (!fiveHour) {
     updateBadgeError('No data');
     return;
   }
 
-  const percentage = fiveHour.utilization || 0;
-  const resetsAt = fiveHour.resets_at;
+  const fiveHourPct = Math.round(fiveHour.utilization || 0);
+  const sevenDayPct = Math.round(sevenDay?.utilization || 0);
+  const fiveHourResets = fiveHour.resets_at;
+  const sevenDayResets = sevenDay?.resets_at;
 
-  /* Check if we should notify about high usage */
-  await checkAndNotifyHighUsage(percentage);
-  
-  /* Generate dynamic icons at multiple sizes */
-  const icon16 = generateIcon(percentage, 16);
-  const icon32 = generateIcon(percentage, 32);
-  const icon48 = generateIcon(percentage, 48);
-  
+  /* Check if we should notify about high usage (based on 5hr) */
+  await checkAndNotifyHighUsage(fiveHourPct);
+
+  /* Generate dynamic icons at multiple sizes (based on 5hr) */
+  const icon16 = generateIcon(fiveHourPct, 16);
+  const icon32 = generateIcon(fiveHourPct, 32);
+  const icon48 = generateIcon(fiveHourPct, 48);
+
   /* Set the dynamic icon */
   chrome.action.setIcon({
     imageData: {
@@ -201,26 +204,29 @@ async function updateBadge(data) {
       48: icon48
     }
   });
-  
-  /* Set badge text with percentage */
-  chrome.action.setBadgeText({ text: `${percentage}%` });
-  
+
+  /* Set badge text with both percentages: 5hr/weekly */
+  chrome.action.setBadgeText({ text: `${fiveHourPct}/${sevenDayPct}` });
+
   /* Set Claude orange color for badge text */
   chrome.action.setBadgeTextColor({ color: '#D97706' });
-  
+
   /* Set transparent background */
   chrome.action.setBadgeBackgroundColor({ color: [0, 0, 0, 0] });
-  
-  /* Format reset time for tooltip */
-  const resetTimeStr = resetsAt
-    ? new Date(resetsAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+
+  /* Format reset times for tooltip */
+  const fiveHourResetStr = fiveHourResets
+    ? new Date(fiveHourResets).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     : 'Unknown';
-  
-  /* Set detailed tooltip */
-  const title = `Claude Usage Monitor\n${percentage}% used\nResets at ${resetTimeStr}`;
+  const sevenDayResetStr = sevenDayResets
+    ? new Date(sevenDayResets).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : 'Unknown';
+
+  /* Set detailed tooltip with both usage periods */
+  const title = `Claude Usage Monitor\n5-hour: ${fiveHourPct}% (resets ${fiveHourResetStr})\nWeekly: ${sevenDayPct}% (resets ${sevenDayResetStr})`;
   chrome.action.setTitle({ title });
 
-  log(`Icon updated: ${percentage}% used, resets at ${resetTimeStr}`);
+  log(`Icon updated: 5hr=${fiveHourPct}%, weekly=${sevenDayPct}%`);
 }
 
 /* Check and notify if usage is high */
