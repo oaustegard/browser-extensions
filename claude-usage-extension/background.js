@@ -205,8 +205,8 @@ async function updateBadge(data) {
     }
   });
 
-  /* Set badge text with both percentages: 5hr/weekly */
-  chrome.action.setBadgeText({ text: `${fiveHourPct}/${sevenDayPct}` });
+  /* Set badge text with weekly percentage (5hr shown via icon thermometer) */
+  chrome.action.setBadgeText({ text: `${sevenDayPct}%` });
 
   /* Set Claude orange color for badge text */
   chrome.action.setBadgeTextColor({ color: '#D97706' });
