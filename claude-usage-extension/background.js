@@ -188,6 +188,23 @@ async function updateBadge(data) {
   const fiveHourResets = fiveHour.resets_at;
   const sevenDayResets = sevenDay?.resets_at;
 
+  /* Calculate weekly budget status: are we ahead or behind? */
+  let weeklyStatus = 'ok'; /* 'ok' = ahead/on track, 'warning' = slightly over, 'danger' = significantly over */
+  if (sevenDayResets) {
+    const now = Date.now();
+    const resetTime = new Date(sevenDayResets).getTime();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const timeElapsedMs = weekMs - (resetTime - now);
+    const expectedPct = (timeElapsedMs / weekMs) * 100;
+    const diff = sevenDayPct - expectedPct;
+
+    if (diff > 15) {
+      weeklyStatus = 'danger';  /* More than 15% over expected */
+    } else if (diff > 5) {
+      weeklyStatus = 'warning'; /* 5-15% over expected */
+    }
+  }
+
   /* Check if we should notify about high usage (based on 5hr) */
   await checkAndNotifyHighUsage(fiveHourPct);
 
@@ -205,14 +222,18 @@ async function updateBadge(data) {
     }
   });
 
-  /* Set badge text with weekly percentage (5hr shown via icon thermometer) */
-  chrome.action.setBadgeText({ text: `${sevenDayPct}%` });
+  /* Set badge text with 5hr percentage */
+  chrome.action.setBadgeText({ text: `${fiveHourPct}%` });
 
-  /* Set Claude orange color for badge text */
-  chrome.action.setBadgeTextColor({ color: '#D97706' });
-
-  /* Set transparent background */
-  chrome.action.setBadgeBackgroundColor({ color: [0, 0, 0, 0] });
+  /* Set badge colors based on weekly budget status */
+  const badgeColors = {
+    ok: { text: '#ffffff', bg: '#10b981' },       /* Green - on track */
+    warning: { text: '#000000', bg: '#f59e0b' },  /* Yellow - slightly over */
+    danger: { text: '#ffffff', bg: '#ef4444' }    /* Red - significantly over */
+  };
+  const colors = badgeColors[weeklyStatus];
+  chrome.action.setBadgeTextColor({ color: colors.text });
+  chrome.action.setBadgeBackgroundColor({ color: colors.bg });
 
   /* Format reset times for tooltip */
   const fiveHourResetStr = fiveHourResets
