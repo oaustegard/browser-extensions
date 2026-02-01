@@ -132,43 +132,35 @@ async function getOrganizationId() {
   }
 }
 
-/* Generate canvas-based icon with thermometer bar */
-function generateIcon(percentage, size) {
+/* Generate canvas-based icon with two horizontal bars */
+function generateIcon(fiveHourPct, weeklyPct, size) {
   const canvas = new OffscreenCanvas(size, size);
   const ctx = canvas.getContext('2d');
 
-  /* Determine fill color based on percentage */
-  const fillColor = percentage < 50 ? '#10b981' : percentage < 80 ? '#f59e0b' : '#ef4444';
-  const claudeOrange = '#D97706';
+  /* Color function based on percentage */
+  const getColor = (pct) => pct < 50 ? '#10b981' : pct < 80 ? '#f59e0b' : '#ef4444';
 
   /* Scale dimensions based on icon size */
   const padding = size <= 16 ? 1 : 2;
-  const borderWidth = size <= 16 ? 1 : 2;
+  const barHeight = size <= 16 ? 3 : Math.floor(size * 0.25);
+  const gap = size <= 16 ? 2 : Math.floor(size * 0.15);
+  const barWidth = size - (padding * 2);
 
-  /* Frame dimensions (top 40% of icon) */
-  const frameX = padding;
-  const frameY = padding;
-  const frameWidth = size - (padding * 2);
-  const frameHeight = Math.floor(size * 0.4);
+  /* Dark background for contrast */
+  ctx.fillStyle = '#1f2937';
+  ctx.fillRect(0, 0, size, size);
 
-  /* Draw Claude orange frame */
-  ctx.fillStyle = claudeOrange;
-  ctx.fillRect(frameX, frameY, frameWidth, borderWidth);
-  ctx.fillRect(frameX, frameY, borderWidth, frameHeight);
-  ctx.fillRect(frameX + frameWidth - borderWidth, frameY, borderWidth, frameHeight);
-  ctx.fillRect(frameX, frameY + frameHeight - borderWidth, frameWidth, borderWidth);
+  /* Top bar: 5-hour usage */
+  const topY = padding;
+  const fiveHourWidth = Math.max(1, (barWidth * fiveHourPct) / 100);
+  ctx.fillStyle = getColor(fiveHourPct);
+  ctx.fillRect(padding, topY, fiveHourWidth, barHeight);
 
-  /* Draw inner thermometer bar fill */
-  const barX = frameX + borderWidth;
-  const barY = frameY + borderWidth;
-  const barMaxWidth = frameWidth - (borderWidth * 2);
-  const barHeight = frameHeight - (borderWidth * 2);
-  const barWidth = Math.max(1, (barMaxWidth * percentage) / 100);
-
-  if (barHeight > 0 && barWidth > 0) {
-    ctx.fillStyle = fillColor;
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-  }
+  /* Bottom bar: Weekly usage */
+  const bottomY = topY + barHeight + gap;
+  const weeklyWidth = Math.max(1, (barWidth * weeklyPct) / 100);
+  ctx.fillStyle = getColor(weeklyPct);
+  ctx.fillRect(padding, bottomY, weeklyWidth, barHeight);
 
   return ctx.getImageData(0, 0, size, size);
 }
@@ -188,13 +180,30 @@ async function updateBadge(data) {
   const fiveHourResets = fiveHour.resets_at;
   const sevenDayResets = sevenDay?.resets_at;
 
+  /* Calculate weekly budget status: are we ahead or behind? */
+  let weeklyStatus = 'ok'; /* 'ok' = ahead/on track, 'warning' = slightly over, 'danger' = significantly over */
+  if (sevenDayResets) {
+    const now = Date.now();
+    const resetTime = new Date(sevenDayResets).getTime();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const timeElapsedMs = weekMs - (resetTime - now);
+    const expectedPct = (timeElapsedMs / weekMs) * 100;
+    const diff = sevenDayPct - expectedPct;
+
+    if (diff > 15) {
+      weeklyStatus = 'danger';  /* More than 15% over expected */
+    } else if (diff > 5) {
+      weeklyStatus = 'warning'; /* 5-15% over expected */
+    }
+  }
+
   /* Check if we should notify about high usage (based on 5hr) */
   await checkAndNotifyHighUsage(fiveHourPct);
 
-  /* Generate dynamic icons at multiple sizes (based on 5hr) */
-  const icon16 = generateIcon(fiveHourPct, 16);
-  const icon32 = generateIcon(fiveHourPct, 32);
-  const icon48 = generateIcon(fiveHourPct, 48);
+  /* Generate dynamic icons at multiple sizes (two bars: 5hr on top, weekly below) */
+  const icon16 = generateIcon(fiveHourPct, sevenDayPct, 16);
+  const icon32 = generateIcon(fiveHourPct, sevenDayPct, 32);
+  const icon48 = generateIcon(fiveHourPct, sevenDayPct, 48);
 
   /* Set the dynamic icon */
   chrome.action.setIcon({
@@ -205,14 +214,18 @@ async function updateBadge(data) {
     }
   });
 
-  /* Set badge text with both percentages: 5hr/weekly */
-  chrome.action.setBadgeText({ text: `${fiveHourPct}/${sevenDayPct}` });
+  /* Set badge text with 5hr percentage */
+  chrome.action.setBadgeText({ text: `${fiveHourPct}%` });
 
-  /* Set Claude orange color for badge text */
-  chrome.action.setBadgeTextColor({ color: '#D97706' });
-
-  /* Set transparent background */
-  chrome.action.setBadgeBackgroundColor({ color: [0, 0, 0, 0] });
+  /* Set badge colors based on weekly budget status */
+  const badgeColors = {
+    ok: { text: '#ffffff', bg: '#10b981' },       /* Green - on track */
+    warning: { text: '#000000', bg: '#f59e0b' },  /* Yellow - slightly over */
+    danger: { text: '#ffffff', bg: '#ef4444' }    /* Red - significantly over */
+  };
+  const colors = badgeColors[weeklyStatus];
+  chrome.action.setBadgeTextColor({ color: colors.text });
+  chrome.action.setBadgeBackgroundColor({ color: colors.bg });
 
   /* Format reset times for tooltip */
   const fiveHourResetStr = fiveHourResets
