@@ -129,24 +129,44 @@ chrome.runtime.onInstalled.addListener(() => {
     });
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+// Resolve the best post URL: content script detection > linkUrl > pageUrl
+async function getPostUrl(tab, info) {
+    if (info.linkUrl) return info.linkUrl;
+    try {
+        const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => window.__bskyHoveredPostUrl
+        });
+        const detected = results?.[0]?.result;
+        if (detected) return detected;
+    } catch (_) {}
+    return info.pageUrl;
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (!tab || !tab.id) return;
 
     const urlToUse = info.linkUrl || info.pageUrl;
 
     switch (info.menuItemId) {
-        // -- Post tools (open in new tab with URL param) --
-        case "bsky-thread":
-            chrome.tabs.create({ url: `${TOOLS_BASE}/thread-reader.html?url=${encodeURIComponent(urlToUse)}` });
+        // -- Post tools (resolve hovered post URL) --
+        case "bsky-thread": {
+            const url = await getPostUrl(tab, info);
+            chrome.tabs.create({ url: `${TOOLS_BASE}/thread-reader.html?url=${encodeURIComponent(url)}` });
             break;
+        }
 
-        case "bsky-constellation":
-            chrome.tabs.create({ url: `${TOOLS_BASE}/post-constellation-graph.html?url=${encodeURIComponent(urlToUse)}` });
+        case "bsky-constellation": {
+            const url = await getPostUrl(tab, info);
+            chrome.tabs.create({ url: `${TOOLS_BASE}/post-constellation-graph.html?url=${encodeURIComponent(url)}` });
             break;
+        }
 
-        case "bsky-processor":
-            chrome.tabs.create({ url: `${TOOLS_BASE}/processor.html?url=${encodeURIComponent(urlToUse)}` });
+        case "bsky-processor": {
+            const url = await getPostUrl(tab, info);
+            chrome.tabs.create({ url: `${TOOLS_BASE}/processor.html?url=${encodeURIComponent(url)}` });
             break;
+        }
 
         // -- Profile tools (inject scripts) --
         case "bsky-profile-hover":
