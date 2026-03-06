@@ -145,7 +145,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             break;
 
         case "bsky-processor":
-            chrome.tabs.create({ url: `${TOOLS_BASE}/processor.html` });
+            chrome.tabs.create({ url: `${TOOLS_BASE}/processor.html?url=${encodeURIComponent(urlToUse)}` });
             break;
 
         // -- Profile tools (inject scripts) --
