@@ -1,0 +1,160 @@
+/* Claude Token Counter — Badge Styles */
+
+.ctc-badge {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 99999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #e2e8f0;
+}
+
+/* ── Summary pill ──────────────────────────────────────── */
+
+.ctc-badge-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, border-color 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.ctc-badge-content:hover {
+  background: #293548;
+  border-color: #475569;
+}
+
+.ctc-badge-tokens {
+  font-weight: 600;
+  color: #93c5fd;
+}
+
+.ctc-badge-sep {
+  color: #475569;
+}
+
+.ctc-badge-cost {
+  font-weight: 700;
+  color: #86efac;
+}
+
+.ctc-badge-model {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-left: 2px;
+}
+
+/* ── Detail panel ──────────────────────────────────────── */
+
+.ctc-badge-detail {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: 520px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 0;
+}
+
+.ctc-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #334155;
+  position: sticky;
+  top: 0;
+  background: #1e293b;
+  z-index: 1;
+}
+
+.ctc-detail-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #f1f5f9;
+}
+
+.ctc-detail-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.ctc-detail-close:hover {
+  color: #e2e8f0;
+}
+
+.ctc-detail-body {
+  padding: 10px 14px;
+}
+
+/* ── Table ─────────────────────────────────────────────── */
+
+.ctc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ctc-table th {
+  text-align: left;
+  padding: 4px 8px;
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #334155;
+}
+
+.ctc-table td {
+  padding: 4px 8px;
+  color: #cbd5e1;
+  border-bottom: 1px solid #1e293b;
+}
+
+.ctc-table tbody tr:hover td {
+  background: #293548;
+}
+
+.ctc-table tfoot td {
+  padding: 6px 8px;
+  border-top: 1px solid #334155;
+  color: #86efac;
+}
+
+/* ── Meta info ─────────────────────────────────────────── */
+
+.ctc-detail-meta {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #334155;
+  font-size: 10px;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ctc-detail-note {
+  margin-top: 4px;
+  font-style: italic;
+  color: #475569;
+}

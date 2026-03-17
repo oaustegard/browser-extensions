@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Claude Token Counter",
+  "version": "0.1.0",
+  "description": "Estimates token usage and API-equivalent cost for Claude.ai conversations",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://claude.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["content/pricing.js", "content/tokenizer.js", "content/content.js"],
+      "css": ["content/styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Claude Token Counter",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
