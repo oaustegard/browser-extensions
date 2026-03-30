@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Claude Cache Viewer</title>
+  <meta charset="utf-8">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: #fafafa;
+    }
+
+    .controls {
+      position: sticky;
+      top: 0;
+      background: white;
+      padding: 12px 20px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .control-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      border: 1px solid #e0e0e0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+
+    .control-group label {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+
+    button:hover {
+      background: #f5f5f5;
+    }
+
+    .toggle-btn.human { background-color: #e3f2fd; border-color: #90caf9; }
+    .toggle-btn.assistant { background-color: #e8f5e9; border-color: #a5d6a7; }
+    .toggle-btn.tools { background-color: #f3e5f5; border-color: #ce93d8; }
+    .toggle-btn.thinking { background-color: #fff3e0; border-color: #ffcc80; }
+    
+    .btn-primary {
+      background: #7B1FA2;
+      color: white;
+      border-color: #7B1FA2;
+    }
+    
+    .btn-primary:hover {
+      background: #6A1B9A;
+    }
+
+    .stats {
+      margin-left: auto;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .title-bar {
+      background: linear-gradient(135deg, #7B1FA2, #9C27B0);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .title-bar h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .title-bar .meta {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .title-bar-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .title-bar-actions button {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+    }
+    
+    .title-bar-actions button:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Message Styling */
+    .message, .tool-use, .thinking-block {
+      padding: 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: border-color 0.15s, opacity 0.15s;
+    }
+
+    .message.assistant {
+      background-color: #e8f5e9;
+      border-color: #a5d6a7;
+    }
+
+    .message.human {
+      background-color: #e3f2fd;
+      border-color: #90caf9;
+    }
+
+    .thinking-block {
+      background-color: #fff3e0;
+      border-color: #ffcc80;
+    }
+
+    .tool-use {
+      background-color: #f3e5f5;
+      border-color: #ce93d8;
+    }
+
+    .message.selected, .tool-use.selected, .thinking-block.selected {
+      border-color: #4CAF50 !important;
+    }
+
+    .message:not(.selected), .tool-use:not(.selected), .thinking-block:not(.selected) {
+      border-color: #ff4444;
+      background: #fff5f5;
+      opacity: 0.6;
+    }
+
+    .msg-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .msg-header strong {
+      text-transform: capitalize;
+      font-size: 14px;
+    }
+
+    .timestamp {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .msg-content {
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    pre {
+      margin: 8px 0;
+      padding: 12px;
+      background: #2b2b2b;
+      color: #e6e1dc;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .tool-name {
+      font-weight: bold;
+      color: #7B1FA2;
+    }
+
+    .thinking-summary {
+      font-style: italic;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #888;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #888;
+    }
+
+    /* Stream recovery notice */
+    .stream-notice {
+      padding: 12px 20px;
+      background: #fff3e0;
+      border-bottom: 1px solid #ffcc80;
+      font-size: 13px;
+    }
+
+    .stream-notice strong {
+      color: #e65100;
+    }
+  </style>
+</head>
+<body>
+  <div class="title-bar">
+    <div>
+      <h1 id="conv-title">Claude Cache Viewer</h1>
+      <div class="meta" id="conv-meta"></div>
+    </div>
+    <div class="title-bar-actions">
+      <button id="open-claude-btn">Open in Claude</button>
+    </div>
+  </div>
+
+  <div class="stream-notice" id="stream-notice" style="display: none;">
+    <strong>⚠️ Partial recovery:</strong> This conversation includes streamed content that may not have fully rendered in Claude's UI.
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <button class="toggle-btn" id="toggle-all">All</button>
+      <button class="toggle-btn human" id="toggle-human">Human</button>
+      <button class="toggle-btn assistant" id="toggle-assistant">Assistant</button>
+      <button class="toggle-btn tools" id="toggle-tools">Tools</button>
+      <button class="toggle-btn thinking" id="toggle-thinking">Thinking</button>
+    </div>
+    <div class="control-group">
+      <label><input type="checkbox" id="collapse-deselected"> Collapse deselected</label>
+    </div>
+    <div class="control-group">
+      <span>Click mode:</span>
+      <label><input type="radio" name="toggle-mode" value="before"> Before</label>
+      <label><input type="radio" name="toggle-mode" value="normal" checked> Single</label>
+      <label><input type="radio" name="toggle-mode" value="after"> After</label>
+    </div>
+    <button id="copy-btn">Copy Selected</button>
+    <button id="render-btn" class="btn-primary">Render HTML</button>
+    <div class="stats" id="stats">Loading...</div>
+  </div>
+
+  <div class="container" id="messages-container">
+    <div class="loading">Loading conversation...</div>
+  </div>
+
+  <script src="lib/pruner-core.js"></script>
+  <script src="viewer.js"></script>
+</body>
+</html>

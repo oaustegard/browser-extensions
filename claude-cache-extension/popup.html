@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Claude Cache</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 400px;
+      min-height: 300px;
+      max-height: 600px;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #7B1FA2, #9C27B0);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .header-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .header-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .view-list, .view-detail {
+      flex: 1;
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .view-list.active, .view-detail.active {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Conversation List */
+    .conv-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .conv-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    .conv-item:hover {
+      background: #f5f5f5;
+    }
+    
+    .conv-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .conv-name {
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    
+    .conv-meta {
+      font-size: 11px;
+      color: #888;
+    }
+    
+    .conv-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    
+    .conv-item:hover .conv-actions {
+      opacity: 1;
+    }
+    
+    .conv-action-btn {
+      background: #f0f0f0;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .conv-action-btn:hover {
+      background: #e0e0e0;
+    }
+    
+    .conv-action-btn.claude-btn {
+      padding: 4px 6px;
+      font-size: 14px;
+    }
+    
+    .conv-action-btn.delete {
+      color: #d32f2f;
+    }
+    
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: #888;
+    }
+    
+    .empty-state p {
+      margin: 0 0 12px;
+    }
+    
+    /* Detail View */
+    .detail-header {
+      padding: 8px 16px;
+      background: #f5f5f5;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    
+    .back-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      font-size: 16px;
+    }
+    
+    .detail-title {
+      flex: 1;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .detail-actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .detail-btn {
+      background: #f0f0f0;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .detail-btn:hover {
+      background: #e0e0e0;
+    }
+    
+    .detail-btn.primary {
+      background: #7B1FA2;
+      color: white;
+    }
+    
+    .detail-btn.primary:hover {
+      background: #6A1B9A;
+    }
+    
+    /* Pruner Controls */
+    .pruner-controls {
+      padding: 8px 12px;
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .toggle-btn {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .toggle-btn:hover {
+      background: #f5f5f5;
+    }
+    
+    .toggle-btn.human { background-color: #e3f2fd; }
+    .toggle-btn.assistant { background-color: #e8f5e9; }
+    .toggle-btn.tools { background-color: #f3e5f5; }
+    .toggle-btn.thinking { background-color: #fff3e0; }
+    
+    .stats {
+      margin-left: auto;
+      font-size: 11px;
+      color: #666;
+    }
+    
+    /* Message Content */
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    
+    .message, .tool-use, .thinking-block {
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .message.human {
+      background-color: #e3f2fd;
+      border-color: #90caf9;
+    }
+    
+    .message.assistant {
+      background-color: #e8f5e9;
+      border-color: #a5d6a7;
+    }
+    
+    .tool-use {
+      background-color: #f3e5f5;
+      border-color: #ce93d8;
+    }
+    
+    .thinking-block {
+      background-color: #fff3e0;
+      border-color: #ffcc80;
+    }
+    
+    .message.selected, .tool-use.selected, .thinking-block.selected {
+      border-color: #4CAF50 !important;
+    }
+    
+    .message:not(.selected), .tool-use:not(.selected), .thinking-block:not(.selected) {
+      border-color: #ff4444;
+      background: #fff0f0;
+      opacity: 0.7;
+    }
+    
+    .msg-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+    
+    .msg-header strong {
+      text-transform: capitalize;
+    }
+    
+    .msg-header .timestamp {
+      color: #888;
+    }
+    
+    .msg-content {
+      max-height: 100px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .msg-content.collapsed {
+      max-height: 2em;
+      overflow: hidden;
+    }
+    
+    pre {
+      margin: 4px 0;
+      padding: 8px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 11px;
+    }
+    
+    code {
+      font-family: ui-monospace, monospace;
+    }
+    
+    /* Stream recovery notice */
+    .stream-notice {
+      padding: 12px 16px;
+      background: #fff3e0;
+      border-bottom: 1px solid #ffcc80;
+      font-size: 12px;
+    }
+    
+    .stream-notice strong {
+      color: #e65100;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Claude Cache</h1>
+    <div class="header-actions">
+      <button class="header-btn" id="capture-btn" title="Capture current conversation">Capture</button>
+      <button class="header-btn" id="refresh-btn" title="Refresh list">↻</button>
+      <button class="header-btn" id="clear-btn" title="Clear all cached data">Clear</button>
+    </div>
+  </div>
+  
+  <div class="view-list active" id="list-view">
+    <ul class="conv-list" id="conv-list">
+      <!-- Populated by JS -->
+    </ul>
+    <div class="empty-state" id="empty-state" style="display: none;">
+      <p>No cached conversations yet.</p>
+      <p>Browse claude.ai to start caching.</p>
+    </div>
+  </div>
+  
+  <div class="view-detail" id="detail-view">
+    <div class="detail-header">
+      <button class="back-btn" id="back-btn">←</button>
+      <span class="detail-title" id="detail-title">Conversation</span>
+      <div class="detail-actions">
+        <button class="detail-btn" id="open-claude-btn" title="Open in Claude">↗ Claude</button>
+        <button class="detail-btn" id="open-tab-btn" title="Open full viewer in new tab">⤢ Tab</button>
+        <button class="detail-btn" id="copy-btn">Copy</button>
+        <button class="detail-btn primary" id="render-btn">Render</button>
+      </div>
+    </div>
+    
+    <div class="stream-notice" id="stream-notice" style="display: none;">
+      <strong>⚠️ Partial recovery:</strong> This conversation includes streamed content that may not have fully rendered in Claude's UI.
+    </div>
+    
+    <div class="pruner-controls">
+      <div class="control-group">
+        <button class="toggle-btn" id="toggle-all">All</button>
+        <button class="toggle-btn human" id="toggle-human">Human</button>
+        <button class="toggle-btn assistant" id="toggle-assistant">Assistant</button>
+        <button class="toggle-btn tools" id="toggle-tools">Tools</button>
+        <button class="toggle-btn thinking" id="toggle-thinking">Thinking</button>
+      </div>
+      <span class="stats" id="stats">0/0 selected</span>
+    </div>
+    
+    <div class="messages-container" id="messages-container">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+  
+  <script src="lib/pruner-core.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
