@@ -113,16 +113,15 @@ const PrunerCore = {
       div.className = 'thinking-block selected';
       div.setAttribute('data-content', t.content);
       div.setAttribute('data-timestamp', t.timestamp);
-      
+
       const summary = t.summaries?.[0]?.summary || 'Thinking...';
       div.innerHTML = `
         <div class="msg-header">
-          <strong>Thinking</strong>
+          <div><strong>Thinking</strong> <span class="toggle-collapse">▼</span></div>
           <span class="timestamp">${this.formatTimestamp(t.timestamp)}</span>
         </div>
-        <div class="msg-content collapsed">
-          <em>${this.escapeHtml(summary.substring(0, 100))}...</em>
-        </div>
+        <div class="thinking-summary"><em>${this.escapeHtml(summary)}</em></div>
+        <pre class="thinking-content"><code>${this.escapeHtml(t.content)}</code></pre>
       `;
       elements.push({ el: div, timestamp: new Date(t.timestamp).getTime() });
     });
@@ -132,23 +131,45 @@ const PrunerCore = {
       const div = document.createElement('div');
       div.className = 'tool-use selected';
       div.setAttribute('data-timestamp', tool.timestamp);
-      
-      let content = `<ToolUse name="${tool.name}">${tool.input}</ToolUse>`;
+
+      let exportContent = `<ToolUse name="${tool.name}">${tool.input}</ToolUse>`;
       if (tool.result !== undefined) {
-        content += `\n<ToolResult name="${tool.name}">${tool.result}</ToolResult>`;
+        exportContent += `\n<ToolResult name="${tool.name}">${tool.result}</ToolResult>`;
       }
-      div.setAttribute('data-content', content);
-      
-      const resultPreview = tool.result 
-        ? `<div class="msg-content collapsed"><code>${this.escapeHtml(tool.result.substring(0, 80))}...</code></div>`
+      div.setAttribute('data-content', exportContent);
+
+      const toolLabel = tool.isResult ? 'Tool Result' : 'Tool';
+      const msgLine = tool.message && tool.message !== tool.name
+        ? `<div class="tool-msg">Message: ${this.escapeHtml(tool.message)}</div>`
         : '';
-      
+
+      let inputSection = '';
+      if (!tool.isResult && tool.input) {
+        inputSection = `
+          <div class="tool-section">
+            <div class="tool-label">Input:</div>
+            <pre class="tool-params"><code>${this.escapeHtml(tool.input)}</code></pre>
+          </div>`;
+      }
+
+      let resultSection = '';
+      if (tool.result !== undefined) {
+        const errorClass = tool.isError ? ' tool-result-error' : '';
+        resultSection = `
+          <div class="tool-section">
+            <div class="tool-label">Result${tool.isError ? ' (error)' : ''}:</div>
+            <pre class="tool-result${errorClass}"><code>${this.escapeHtml(tool.result)}</code></pre>
+          </div>`;
+      }
+
       div.innerHTML = `
         <div class="msg-header">
-          <strong>Tool: ${this.escapeHtml(tool.name)}</strong>
+          <div><strong>${toolLabel}: ${this.escapeHtml(tool.name)}</strong> <span class="toggle-collapse">▼</span></div>
           <span class="timestamp">${this.formatTimestamp(tool.timestamp)}</span>
         </div>
-        ${resultPreview}
+        ${msgLine}
+        ${inputSection}
+        ${resultSection}
       `;
       elements.push({ el: div, timestamp: new Date(tool.timestamp).getTime() });
     });
@@ -158,13 +179,17 @@ const PrunerCore = {
       const div = document.createElement('div');
       div.className = `message ${message.sender} selected`;
       div.setAttribute('data-timestamp', timestamp);
-      
+
+      const renderedText = message.sender === 'assistant'
+        ? this.mdToHtml(processed.text)
+        : this.escapeHtml(processed.text);
+
       div.innerHTML = `
         <div class="msg-header">
           <strong>${message.sender}</strong>
           <span class="timestamp">${formattedTime}</span>
         </div>
-        <div class="msg-content">${this.escapeHtml(processed.text)}</div>
+        <div class="msg-content">${renderedText}</div>
       `;
       elements.push({ el: div, timestamp: new Date(timestamp).getTime() });
     }
@@ -285,6 +310,25 @@ const PrunerCore = {
     return html;
   },
 
+  // Extract tool name from label like "Tool: bash_tool" or "ToolUse name="bash_tool""
+  _extractToolName(content) {
+    const m = content.match(/(?:Tool[^:]*:\s*|name=")(\S+?)(?:"|>|\s)/i);
+    return m ? m[1] : 'unknown';
+  },
+
+  // Try to parse tool input/result from data-content attribute
+  _parseToolContent(content) {
+    const useMatch = content.match(/<ToolUse name="([^"]+)">([\s\S]*?)<\/ToolUse>/);
+    const resultMatch = content.match(/<ToolResult name="([^"]+)">([\s\S]*?)<\/ToolResult>/);
+
+    return {
+      name: useMatch?.[1] || resultMatch?.[1] || 'unknown',
+      input: useMatch?.[2] || null,
+      result: resultMatch?.[2] || null,
+      isError: false
+    };
+  },
+
   // Render conversation as standalone HTML page
   renderAsHTML(conversationData, container) {
     const allBlocks = Array.from(container.querySelectorAll('.message, .tool-use, .thinking-block'));
@@ -304,10 +348,21 @@ const PrunerCore = {
 
       if (el.classList.contains('thinking-block')) {
         const content = el.getAttribute('data-content') || '';
-        parts.push({ type: 'thinking', content, time });
+        const summaryEl = el.querySelector('.thinking-summary');
+        const summary = summaryEl ? summaryEl.textContent.trim() : 'Thinking\u2026';
+        parts.push({ type: 'thinking', content, summary, time });
       } else if (el.classList.contains('tool-use')) {
-        const content = el.getAttribute('data-content') || '';
-        parts.push({ type: 'tool', content, time });
+        const rawContent = el.getAttribute('data-content') || '';
+        const parsed = this._parseToolContent(rawContent);
+        const headerEl = el.querySelector('.msg-header strong');
+        const label = headerEl ? headerEl.textContent.trim() : `Tool: ${parsed.name}`;
+        const msgEl = el.querySelector('.tool-msg');
+        const message = msgEl ? msgEl.textContent.replace(/^Message:\s*/, '').trim() : '';
+        parts.push({
+          type: 'tool', label, message,
+          name: parsed.name, input: parsed.input, result: parsed.result,
+          isError: parsed.isError, time
+        });
       } else if (el.classList.contains('message')) {
         const role = el.classList.contains('human') ? 'human' : 'assistant';
         const content = el.querySelector('.msg-content')?.textContent || '';
@@ -317,34 +372,49 @@ const PrunerCore = {
 
     // Build HTML
     let bodyHtml = '';
-    
+
     parts.forEach(p => {
       if (p.type === 'message') {
-        const rendered = p.role === 'human' 
-          ? this.escapeHtml(p.content) 
+        const rendered = p.role === 'human'
+          ? this.escapeHtml(p.content)
           : this.mdToHtml(p.content);
         const roleLabel = p.role === 'human' ? 'You' : 'Claude';
-        
+
         bodyHtml += `
           <div class="msg ${p.role}">
-            <div class="msg-meta"><strong>${roleLabel}</strong> <span class="ts">${this.escapeHtml(p.time)}</span></div>
-            <div class="msg-content">${rendered}</div>
+            <div class="msg-body">
+              <div class="msg-meta"><strong>${roleLabel}</strong> <span class="ts">${this.escapeHtml(p.time)}</span></div>
+              <div class="msg-content">${rendered}</div>
+            </div>
           </div>`;
       } else if (p.type === 'tool') {
+        let inner = '';
+        if (p.message) inner += `<div class="tool-msg">${this.escapeHtml(p.message)}</div>`;
+        if (p.input) inner += `<div class="tool-section"><div class="tool-lbl">Input</div><pre><code>${this.escapeHtml(p.input)}</code></pre></div>`;
+        if (p.result) {
+          const errClass = p.isError ? ' tool-error' : '';
+          inner += `<div class="tool-section"><div class="tool-lbl">Result${p.isError ? ' (error)' : ''}</div><pre class="${errClass}"><code>${this.escapeHtml(p.result)}</code></pre></div>`;
+        }
+
         bodyHtml += `
           <div class="msg assistant">
-            <details class="tool-block">
-              <summary>Tool <span class="ts">${this.escapeHtml(p.time)}</span></summary>
-              <pre><code>${this.escapeHtml(p.content)}</code></pre>
-            </details>
+            <div class="msg-body">
+              <details class="tool-block">
+                <summary>${this.escapeHtml(p.label)} <span class="ts">${this.escapeHtml(p.time)}</span></summary>
+                ${inner}
+              </details>
+            </div>
           </div>`;
       } else if (p.type === 'thinking') {
+        const summaryText = this.escapeHtml(p.summary);
         bodyHtml += `
           <div class="msg assistant">
-            <details class="thinking-block">
-              <summary>Thinking <span class="ts">${this.escapeHtml(p.time)}</span></summary>
-              <pre><code>${this.escapeHtml(p.content)}</code></pre>
-            </details>
+            <div class="msg-body">
+              <details class="thinking-block">
+                <summary>${summaryText} <span class="ts">${this.escapeHtml(p.time)}</span></summary>
+                <pre class="thinking-pre"><code>${this.escapeHtml(p.content)}</code></pre>
+              </details>
+            </div>
           </div>`;
       }
     });
@@ -363,7 +433,7 @@ const PrunerCore = {
 <style>
 *, *::before, *::after { box-sizing: border-box; }
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Söhne', ui-sans-serif, system-ui, -apple-system, sans-serif;
   margin: 0; padding: 0;
   background: #f7f5f2;
   color: #1a1a1a;
@@ -373,83 +443,119 @@ body {
   position: sticky; top: 0; z-index: 10;
   background: #fff; border-bottom: 1px solid #e5e2dc;
   padding: 14px 24px;
-  font-size: 15px; font-weight: 600;
+  font-size: 15px; font-weight: 600; color: #333;
 }
 .header .meta {
   font-weight: 400; font-size: 13px; color: #888; margin-top: 2px;
 }
 .conversation {
-  max-width: 800px; margin: 0 auto;
+  max-width: 820px; margin: 0 auto;
   padding: 24px 16px 80px;
 }
 .msg {
-  padding: 16px 0;
-  border-bottom: 1px solid #eae7e1;
+  display: flex; gap: 14px; padding: 20px 0;
 }
+.msg + .msg { border-top: 1px solid #eae7e1; }
+.msg-body { flex: 1; min-width: 0; }
 .msg-meta {
-  margin-bottom: 8px;
-  font-size: 13px;
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px;
 }
-.msg-meta strong { font-weight: 600; }
-.ts { color: #999; margin-left: 8px; }
+.msg-meta strong { font-size: 14px; }
+.ts { font-size: 12px; color: #999; }
 .msg-content {
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: 15px; line-height: 1.65; overflow-wrap: break-word;
 }
 .msg.human {
-  background: #faf9f7;
-  padding: 16px;
-  border-radius: 8px;
-  margin: 8px 0;
-  border-bottom: none;
+  background: #faf9f7; border-radius: 12px;
+  padding: 16px; margin: 8px 0;
 }
 .msg.human .msg-content { white-space: pre-wrap; }
-.msg-content p { margin: 0.5em 0; }
+.msg-content h1, .msg-content h2, .msg-content h3,
+.msg-content h4, .msg-content h5, .msg-content h6 {
+  margin: 1.2em 0 0.4em; line-height: 1.3;
+}
+.msg-content h1 { font-size: 1.4em; }
+.msg-content h2 { font-size: 1.25em; }
+.msg-content h3 { font-size: 1.1em; }
+.msg-content p { margin: 0.6em 0; }
+.msg-content ul, .msg-content ol { margin: 0.5em 0; padding-left: 1.5em; }
+.msg-content li { margin: 0.25em 0; }
+.msg-content a { color: #b45309; text-decoration: underline; }
+.msg-content blockquote {
+  border-left: 3px solid #d4a574; margin: 0.8em 0; padding: 0.4em 1em;
+  color: #555; background: #faf8f5;
+}
+.msg-content hr { border: none; border-top: 1px solid #e5e2dc; margin: 1.5em 0; }
+.msg-content strong { font-weight: 600; }
+.msg-content code {
+  font-family: 'Söhne Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em; background: #f0ece6; padding: 2px 5px; border-radius: 4px;
+}
 .msg-content pre {
   background: #2b2b2b; color: #e6e1dc;
-  padding: 12px; border-radius: 6px;
-  overflow-x: auto; font-size: 13px;
-}
-.msg-content code {
-  font-family: ui-monospace, monospace;
-  font-size: 0.9em;
-  background: #f0ece6;
-  padding: 2px 4px;
-  border-radius: 3px;
+  padding: 16px; border-radius: 8px;
+  overflow-x: auto; margin: 0.8em 0; line-height: 1.5;
 }
 .msg-content pre code {
-  background: none;
-  padding: 0;
+  background: none; padding: 0; color: inherit; font-size: 13px; white-space: pre;
 }
 .tool-block, .thinking-block {
-  border: 1px solid #e0ddd7;
-  border-radius: 6px;
-  margin: 8px 0;
+  border: 1px solid #e0ddd7; border-radius: 8px; overflow: hidden;
 }
 .tool-block summary, .thinking-block summary {
-  padding: 8px 12px;
-  cursor: pointer;
+  padding: 10px 14px; cursor: pointer;
+  font-size: 14px; font-weight: 500;
   background: #f9f7f4;
-  font-size: 13px;
+  display: flex; align-items: center; gap: 8px;
+  list-style: none; user-select: none;
+}
+.tool-block summary::-webkit-details-marker,
+.thinking-block summary::-webkit-details-marker { display: none; }
+.tool-block summary::before,
+.thinking-block summary::before {
+  content: '▶'; font-size: 10px; color: #999; transition: transform 0.15s;
+}
+details[open] > summary::before { transform: rotate(90deg); }
+.tool-section { padding: 8px 14px; }
+.tool-section + .tool-section { border-top: 1px dashed #e0ddd7; }
+.tool-lbl {
+  font-size: 12px; font-weight: 600; color: #888;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+}
+.tool-msg {
+  padding: 8px 14px; font-size: 14px; color: #555;
+  border-bottom: 1px solid #f0ece6;
 }
 .tool-block pre, .thinking-block pre {
-  margin: 0;
-  border-radius: 0 0 6px 6px;
-  max-height: 300px;
-  overflow-y: auto;
+  background: #2b2b2b; color: #e6e1dc;
+  margin: 0; padding: 12px 14px; border-radius: 0;
+  font-size: 13px; overflow-x: auto;
+}
+.tool-block pre code, .thinking-block pre code {
+  white-space: pre-wrap; word-break: break-word;
+  font-family: 'Söhne Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.tool-error { border-left: 3px solid #dc2626; }
+.thinking-pre { max-height: 400px; overflow-y: auto; }
+.thinking-pre code { color: #c4b5a0; }
+@media print {
+  .header { position: static; }
+  body { background: #fff; }
+  .msg.human { background: #f9f8f6; }
+  .msg-content pre, .tool-block pre, .thinking-block pre {
+    background: #f4f4f4; color: #333;
+  }
 }
 .footer {
-  text-align: center;
-  padding: 24px;
-  font-size: 12px;
-  color: #999;
+  text-align: center; padding: 24px; font-size: 12px; color: #bbb;
 }
+.footer a { color: #b45309; }
 </style>
 </head>
 <body>
 <div class="header">
   ${title}
-  <div class="meta">Cached by Claude Cache · ${new Date().toLocaleDateString()}</div>
+  <div class="meta">Cached by Claude Cache &middot; ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
 </div>
 <div class="conversation">
 ${bodyHtml}
