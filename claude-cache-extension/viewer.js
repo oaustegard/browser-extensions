@@ -38,18 +38,33 @@ function renderConversation(conv) {
   conv.data.chat_messages.forEach(message => {
     const processed = PrunerCore.processMessageContent(message);
     const elements = PrunerCore.renderMessage(message, processed);
-    
+
     elements.forEach(el => {
-      // Enhanced click handling
+      // Header click toggles collapse
+      const header = el.querySelector('.msg-header');
+      if (header) {
+        header.addEventListener('click', (e) => {
+          e.stopPropagation();
+          el.classList.toggle('collapsed');
+          const toggle = el.querySelector('.toggle-collapse');
+          if (toggle) {
+            toggle.textContent = el.classList.contains('collapsed') ? '▶' : '▼';
+          }
+        });
+      }
+
+      // Body click toggles selection
       el.addEventListener('click', (e) => {
+        if (e.target.closest('.msg-header')) return;
+
         const mode = document.querySelector('input[name="toggle-mode"]:checked').value;
-        
+
         if (mode === 'normal') {
           el.classList.toggle('selected');
         } else {
           const allBlocks = Array.from(messagesContainer.querySelectorAll('.message, .tool-use, .thinking-block'));
           const currentIndex = allBlocks.indexOf(el);
-          
+
           if (mode === 'before') {
             for (let i = 0; i < currentIndex; i++) {
               allBlocks[i].classList.toggle('selected');
@@ -60,11 +75,11 @@ function renderConversation(conv) {
             }
           }
         }
-        
+
         updateStats();
         updateCollapsedState();
       });
-      
+
       messagesContainer.appendChild(el);
     });
   });

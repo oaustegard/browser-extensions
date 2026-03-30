@@ -176,9 +176,24 @@ function renderMessages(data) {
   data.chat_messages.forEach(message => {
     const processed = PrunerCore.processMessageContent(message);
     const elements = PrunerCore.renderMessage(message, processed);
-    
+
     elements.forEach(el => {
-      el.addEventListener('click', () => {
+      // Header click toggles collapse
+      const header = el.querySelector('.msg-header');
+      if (header) {
+        header.addEventListener('click', (e) => {
+          e.stopPropagation();
+          el.classList.toggle('collapsed');
+          const toggle = el.querySelector('.toggle-collapse');
+          if (toggle) {
+            toggle.textContent = el.classList.contains('collapsed') ? '▶' : '▼';
+          }
+        });
+      }
+
+      // Body click toggles selection
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.msg-header')) return;
         el.classList.toggle('selected');
         updateStats();
       });
