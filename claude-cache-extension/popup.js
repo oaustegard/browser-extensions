@@ -80,12 +80,25 @@ async function loadConversationList() {
         chrome.tabs.create({ url: `https://claude.ai/chat/${id}` });
       });
       
-      item.querySelector('.delete').addEventListener('click', async (e) => {
+      item.querySelector('.delete').addEventListener('click', (e) => {
         e.stopPropagation();
-        if (confirm('Delete this cached conversation?')) {
+        const confirmBar = document.getElementById('confirm-bar');
+        document.getElementById('confirm-message').textContent = 'Delete this conversation?';
+        const yesBtn = document.getElementById('confirm-yes');
+        yesBtn.textContent = 'Delete';
+        // Replace handler for this specific delete
+        const newYes = yesBtn.cloneNode(true);
+        yesBtn.parentNode.replaceChild(newYes, yesBtn);
+        newYes.addEventListener('click', async () => {
+          confirmBar.classList.remove('active');
           await sendMessage({ type: 'delete-conversation', conversationId: id });
           loadConversationList();
-        }
+          showStatus('Conversation deleted', 'success');
+        });
+        document.getElementById('confirm-no').addEventListener('click', () => {
+          confirmBar.classList.remove('active');
+        }, { once: true });
+        confirmBar.classList.add('active');
       });
       
       // Row click opens in full tab
@@ -230,45 +243,104 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
   loadConversationList();
 });
 
+// Status toast helper
+function showStatus(message, type = 'success', duration = 3000) {
+  const toast = document.getElementById('status-toast');
+  toast.textContent = message;
+  toast.className = `status-toast active ${type}`;
+  setTimeout(() => {
+    toast.classList.remove('active');
+  }, duration);
+}
+
 // Capture current conversation from active tab
 document.getElementById('capture-btn').addEventListener('click', async () => {
   const btn = document.getElementById('capture-btn');
   btn.textContent = '...';
   btn.disabled = true;
-  
+
   try {
     // Get active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
+
     if (!tab?.url?.includes('claude.ai')) {
-      alert('Open a claude.ai conversation first');
+      showStatus('Open a claude.ai conversation first', 'error');
       btn.textContent = 'Capture';
       btn.disabled = false;
       return;
     }
-    
-    // Send message to content script (ISOLATED world) to trigger capture
-    await chrome.tabs.sendMessage(tab.id, { type: 'request-capture' });
-    
-    // Wait a moment for capture to complete, then refresh list
-    setTimeout(() => {
-      loadConversationList();
+
+    // Check if we're on a conversation page (not just claude.ai homepage)
+    if (!tab.url.match(/claude\.ai\/chat\/[a-f0-9-]+/)) {
+      showStatus('Navigate to a conversation first', 'error');
       btn.textContent = 'Capture';
       btn.disabled = false;
-    }, 2000);
-    
+      return;
+    }
+
+    // Get current conversation count to detect new data
+    let prevConversations = [];
+    try {
+      prevConversations = await sendMessage({ type: 'get-conversations' }) || [];
+    } catch (e) { /* ignore */ }
+
+    // Send message to content script (ISOLATED world) to trigger capture
+    await chrome.tabs.sendMessage(tab.id, { type: 'request-capture' });
+
+    // Poll for new data (up to 5 seconds)
+    let captured = false;
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      try {
+        const newConversations = await sendMessage({ type: 'get-conversations' }) || [];
+        // Check if any conversation was added or updated since we started
+        const prevMap = new Map(prevConversations.map(c => [c.conversationId, c.updatedAt]));
+        const hasNew = newConversations.some(c => {
+          const prev = prevMap.get(c.conversationId);
+          return !prev || c.updatedAt > prev;
+        });
+        if (hasNew) {
+          captured = true;
+          break;
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    loadConversationList();
+    btn.textContent = 'Capture';
+    btn.disabled = false;
+
+    if (captured) {
+      showStatus('Conversation captured!', 'success');
+    } else {
+      showStatus('Capture may have failed — check console for errors', 'error', 5000);
+    }
+
   } catch (err) {
     console.error('Capture failed:', err);
-    alert('Failed to capture: ' + err.message);
+    showStatus('Failed: ' + err.message, 'error', 5000);
     btn.textContent = 'Capture';
     btn.disabled = false;
   }
 });
 
-document.getElementById('clear-btn').addEventListener('click', async () => {
-  if (confirm('Clear all cached conversations?')) {
+// Inline confirmation for clear
+document.getElementById('clear-btn').addEventListener('click', () => {
+  document.getElementById('confirm-bar').classList.add('active');
+});
+
+document.getElementById('confirm-no').addEventListener('click', () => {
+  document.getElementById('confirm-bar').classList.remove('active');
+});
+
+document.getElementById('confirm-yes').addEventListener('click', async () => {
+  document.getElementById('confirm-bar').classList.remove('active');
+  try {
     await sendMessage({ type: 'clear-all' });
     loadConversationList();
+    showStatus('All conversations cleared', 'success');
+  } catch (err) {
+    showStatus('Failed to clear: ' + err.message, 'error');
   }
 });
 

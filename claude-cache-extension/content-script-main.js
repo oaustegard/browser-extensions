@@ -13,7 +13,7 @@
 (function() {
   'use strict';
 
-  const VERSION = '0.5.1';
+  const VERSION = '0.5.2';
   const LOG_PREFIX = '[Claude Cache]';
   const DEBUG = true;
 
@@ -366,7 +366,10 @@
   // Proactively fetch current conversation data
   async function fetchAndCacheCurrentConversation() {
     const conversationId = getCurrentConversationId();
-    if (!conversationId) return;
+    if (!conversationId) {
+      warn('No conversation ID found in URL:', window.location.pathname);
+      return;
+    }
 
     log('Proactively fetching conversation:', conversationId);
 
@@ -380,18 +383,27 @@
         },
         credentials: 'include'
       });
-      
+
+      if (!bootstrapRes.ok) {
+        warn('Bootstrap API returned', bootstrapRes.status);
+        return;
+      }
+
       const bootstrap = await bootstrapRes.json();
-      const orgId = bootstrap?.account?.memberships?.[0]?.organization?.uuid;
-      
+
+      // Try multiple paths to find org ID (API structure may vary)
+      const orgId = bootstrap?.account?.memberships?.[0]?.organization?.uuid
+        || bootstrap?.account?.memberships?.[0]?.organization?.id
+        || bootstrap?.organization?.uuid;
+
       if (!orgId) {
-        warn('Could not get org ID from bootstrap');
+        warn('Could not get org ID from bootstrap. Keys:', Object.keys(bootstrap || {}));
         return;
       }
 
       // Fetch full conversation data
       const apiUrl = `https://claude.ai/api/organizations/${orgId}/chat_conversations/${conversationId}?tree=True&rendering_mode=messages&render_all_tools=true`;
-      
+
       const convRes = await originalFetch(apiUrl, {
         headers: {
           'accept': '*/*',
@@ -402,15 +414,15 @@
       });
 
       if (!convRes.ok) {
-        warn('Failed to fetch conversation:', convRes.status);
+        warn('Failed to fetch conversation:', convRes.status, convRes.statusText);
         return;
       }
 
       const data = await convRes.json();
-      
-      log('Proactively cached conversation:', conversationId, 
+
+      log('Proactively cached conversation:', conversationId,
           data.chat_messages?.length, 'messages');
-      
+
       sendToServiceWorker('conversation-data', {
         conversationId,
         type: 'conversation',
