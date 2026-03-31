@@ -420,9 +420,79 @@
       border-bottom: 1px solid #ffcc80;
       font-size: 12px;
     }
-    
+
     .stream-notice strong {
       color: #e65100;
+    }
+
+    /* Inline confirmation bar */
+    .confirm-bar {
+      display: none;
+      padding: 10px 16px;
+      background: #fff3e0;
+      border-bottom: 1px solid #ffcc80;
+      font-size: 12px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .confirm-bar.active {
+      display: flex;
+    }
+
+    .confirm-bar .confirm-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .confirm-bar .confirm-btns button {
+      padding: 4px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .confirm-bar .confirm-yes {
+      background: #d32f2f;
+      color: white;
+    }
+
+    .confirm-bar .confirm-yes:hover {
+      background: #b71c1c;
+    }
+
+    .confirm-bar .confirm-no {
+      background: #e0e0e0;
+    }
+
+    .confirm-bar .confirm-no:hover {
+      background: #bdbdbd;
+    }
+
+    /* Status toast */
+    .status-toast {
+      display: none;
+      padding: 8px 16px;
+      font-size: 12px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .status-toast.active {
+      display: block;
+    }
+
+    .status-toast.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status-toast.error {
+      background: #ffebee;
+      color: #c62828;
     }
   </style>
 </head>
@@ -436,6 +506,14 @@
     </div>
   </div>
   
+  <div class="status-toast" id="status-toast"></div>
+  <div class="confirm-bar" id="confirm-bar">
+    <span id="confirm-message">Clear all cached conversations?</span>
+    <div class="confirm-btns">
+      <button class="confirm-yes" id="confirm-yes">Clear</button>
+      <button class="confirm-no" id="confirm-no">Cancel</button>
+    </div>
+  </div>
   <div class="view-list active" id="list-view">
     <ul class="conv-list" id="conv-list">
       <!-- Populated by JS -->

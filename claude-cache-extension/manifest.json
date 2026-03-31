@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Claude Conversation Cache",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Continuously caches Claude.ai conversations to prevent data loss on UX crashes",
   
   "permissions": [
