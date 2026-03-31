@@ -148,13 +148,16 @@ async function startStream(conversationId) {
   });
 }
 
+// How often to merge in-progress stream data into the conversation (in chunks)
+const PERIODIC_MERGE_INTERVAL = 20;
+
 async function appendStreamChunk(conversationId, events, rawChunk) {
   const database = await getDB();
-  
+
   return new Promise((resolve, reject) => {
     const tx = database.transaction(STORE_STREAMS, 'readwrite');
     const store = tx.objectStore(STORE_STREAMS);
-    
+
     const getRequest = store.get(conversationId);
     getRequest.onsuccess = () => {
       const record = getRequest.result;
@@ -162,9 +165,15 @@ async function appendStreamChunk(conversationId, events, rawChunk) {
         record.events.push(...events);
         record.rawChunks.push(rawChunk);
         record.lastChunkAt = Date.now();
-        
+
         const putRequest = store.put(record);
-        putRequest.onsuccess = () => resolve(record);
+        putRequest.onsuccess = () => {
+          // Periodically merge in-progress stream into conversation for crash safety
+          if (record.rawChunks.length % PERIODIC_MERGE_INTERVAL === 0) {
+            mergeInProgressStream(conversationId, record.events);
+          }
+          resolve(record);
+        };
         putRequest.onerror = () => reject(putRequest.error);
       } else {
         // Stream wasn't started properly, create it now
@@ -178,6 +187,20 @@ async function appendStreamChunk(conversationId, events, rawChunk) {
     };
     getRequest.onerror = () => reject(getRequest.error);
   });
+}
+
+// Merge in-progress stream into conversation so cached data stays current
+async function mergeInProgressStream(conversationId, events) {
+  try {
+    if (!events || events.length === 0) return;
+    const message = reconstructMessageFromEvents(events);
+    message._partial = true;
+    message._streaming = true;
+    await mergeStreamedMessage(conversationId, message);
+    console.log('[Claude Cache SW] Periodic merge: updated conversation with', events.length, 'events');
+  } catch (err) {
+    console.warn('[Claude Cache SW] Periodic merge failed:', err);
+  }
 }
 
 async function endStream(conversationId) {
@@ -356,6 +379,14 @@ async function handleContentScriptMessage(type, data) {
           partialStream.error = data.error;
           partialStream.errorAt = Date.now();
           partialStream.finalBuffer = data.buffer;
+          // Reconstruct and merge partial message so it's visible in cached conversation
+          if (partialStream.events && partialStream.events.length > 0) {
+            console.log('[Claude Cache SW] Reconstructing partial message from', partialStream.events.length, 'events');
+            const partialMessage = reconstructMessageFromEvents(partialStream.events);
+            partialMessage._partial = true;
+            partialMessage._error = data.error;
+            await mergeStreamedMessage(data.conversationId, partialMessage);
+          }
         }
         // Also save raw buffer separately
         if (data.buffer) {
@@ -467,6 +498,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           
         case 'get-conversation':
           const conversation = await getConversation(message.conversationId);
+          // Check for active/partial stream data and merge it on-the-fly
+          const activeStream = await getStream(message.conversationId);
+          if (activeStream && activeStream.events?.length > 0 && !activeStream.complete) {
+            const inProgress = reconstructMessageFromEvents(activeStream.events);
+            inProgress._partial = true;
+            inProgress._streaming = !activeStream.error;
+            if (conversation?.data?.chat_messages) {
+              const idx = conversation.data.chat_messages.findIndex(m => m.uuid === inProgress.uuid);
+              if (idx >= 0) {
+                conversation.data.chat_messages[idx] = inProgress;
+              } else {
+                conversation.data.chat_messages.push(inProgress);
+              }
+            }
+          }
           sendResponse({ success: true, data: conversation });
           break;
           
