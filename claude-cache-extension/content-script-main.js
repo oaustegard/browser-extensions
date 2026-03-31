@@ -13,7 +13,7 @@
 (function() {
   'use strict';
 
-  const VERSION = '0.4.5';
+  const VERSION = '0.5.1';
   const LOG_PREFIX = '[Claude Cache]';
   const DEBUG = true;
 
