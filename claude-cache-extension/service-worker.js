@@ -604,6 +604,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true, data: stream });
           break;
           
+        case 'get-stream-status':
+          // Return summary of all active (non-complete) streams
+          const statusDb = await getDB();
+          const streamStatus = await new Promise((resolve, reject) => {
+            const tx = statusDb.transaction(STORE_STREAMS, 'readonly');
+            const store = tx.objectStore(STORE_STREAMS);
+            const req = store.getAll();
+            req.onsuccess = () => {
+              const active = req.result
+                .filter(s => !s.complete)
+                .map(s => ({
+                  conversationId: s.conversationId,
+                  chunks: s.rawChunks?.length || 0,
+                  events: s.events?.length || 0,
+                  startedAt: s.startedAt,
+                  lastChunkAt: s.lastChunkAt,
+                  error: s.error || null,
+                  mergeFailures: mergeFailures.get(s.conversationId) || 0
+                }));
+              resolve(active);
+            };
+            req.onerror = () => reject(req.error);
+          });
+          sendResponse({ success: true, data: streamStatus });
+          break;
+          
         case 'delete-conversation':
           await deleteConversation(message.conversationId);
           await deleteStream(message.conversationId);

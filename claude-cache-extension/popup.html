@@ -494,6 +494,41 @@
       background: #ffebee;
       color: #c62828;
     }
+
+    .stream-status-bar {
+      display: none;
+      padding: 8px 16px;
+      background: #E8F5E9;
+      border-bottom: 1px solid #C8E6C9;
+      font-size: 12px;
+      color: #2E7D32;
+      flex-shrink: 0;
+    }
+    .stream-status-bar.active {
+      display: block;
+    }
+    .stream-status-bar.error {
+      background: #FFF3E0;
+      border-color: #FFE0B2;
+      color: #E65100;
+    }
+    .stream-status-bar .stream-indicator {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4CAF50;
+      margin-right: 6px;
+      animation: pulse 1.5s infinite;
+    }
+    .stream-status-bar.error .stream-indicator {
+      background: #FF9800;
+      animation: none;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
   </style>
 </head>
 <body>
@@ -513,6 +548,10 @@
       <button class="confirm-yes" id="confirm-yes">Clear</button>
       <button class="confirm-no" id="confirm-no">Cancel</button>
     </div>
+  </div>
+  <div class="stream-status-bar" id="stream-status-bar">
+    <span class="stream-indicator"></span>
+    <span id="stream-status-text"></span>
   </div>
   <div class="view-list active" id="list-view">
     <ul class="conv-list" id="conv-list">

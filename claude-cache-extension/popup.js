@@ -420,5 +420,44 @@ document.getElementById('open-tab-btn').addEventListener('click', () => {
   });
 });
 
+// Stream status polling
+const streamStatusBar = document.getElementById('stream-status-bar');
+const streamStatusText = document.getElementById('stream-status-text');
+let streamPollInterval = null;
+
+async function pollStreamStatus() {
+  try {
+    const streams = await sendMessage({ type: 'get-stream-status' });
+    if (!streams || streams.length === 0) {
+      streamStatusBar.classList.remove('active', 'error');
+      return;
+    }
+
+    // Show status for most recent active stream
+    const latest = streams.sort((a, b) => (b.lastChunkAt || 0) - (a.lastChunkAt || 0))[0];
+    const elapsed = latest.lastChunkAt ? formatRelativeTime(latest.lastChunkAt) : '?';
+    const hasError = latest.error || latest.mergeFailures > 0;
+
+    let text = `Capturing: ${latest.chunks} chunks, ${latest.events} events · last: ${elapsed}`;
+    if (streams.length > 1) {
+      text += ` (+${streams.length - 1} more)`;
+    }
+    if (latest.mergeFailures > 0) {
+      text += ` · ⚠ ${latest.mergeFailures} merge failures`;
+    }
+
+    streamStatusText.textContent = text;
+    streamStatusBar.classList.add('active');
+    streamStatusBar.classList.toggle('error', hasError);
+  } catch (err) {
+    // Service worker may be inactive — that's fine
+    streamStatusBar.classList.remove('active');
+  }
+}
+
+// Poll every 2s while popup is open
+streamPollInterval = setInterval(pollStreamStatus, 2000);
+pollStreamStatus(); // immediate first check
+
 // Initialize
 loadConversationList();
