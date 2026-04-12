@@ -54,6 +54,9 @@ async function getDB() {
   return db;
 }
 
+// Maximum cached conversations before LRU eviction kicks in
+const MAX_CACHED_CONVERSATIONS = 100;
+
 // Save or update conversation data
 async function saveConversation(conversationId, type, data, url) {
   const database = await getDB();
@@ -74,8 +77,46 @@ async function saveConversation(conversationId, type, data, url) {
     const store = tx.objectStore(STORE_CONVERSATIONS);
     
     const request = store.put(record);
-    request.onsuccess = () => resolve(record);
+    request.onsuccess = () => {
+      // Evict oldest entries if over limit
+      evictOldConversations(database).catch(err =>
+        console.warn('[Claude Cache SW] Eviction error:', err)
+      );
+      resolve(record);
+    };
     request.onerror = () => reject(request.error);
+  });
+}
+
+// Remove oldest conversations when cache exceeds max size
+async function evictOldConversations(database) {
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(STORE_CONVERSATIONS, 'readwrite');
+    const store = tx.objectStore(STORE_CONVERSATIONS);
+    const countReq = store.count();
+    countReq.onsuccess = () => {
+      const count = countReq.result;
+      if (count <= MAX_CACHED_CONVERSATIONS) return resolve();
+      
+      const toEvict = count - MAX_CACHED_CONVERSATIONS;
+      const index = store.index('updatedAt');
+      // Open cursor ascending (oldest first)
+      const cursorReq = index.openCursor();
+      let evicted = 0;
+      cursorReq.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor && evicted < toEvict) {
+          console.log('[Claude Cache SW] Evicting old conversation:', cursor.value.name);
+          cursor.delete();
+          evicted++;
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      cursorReq.onerror = () => reject(cursorReq.error);
+    };
+    countReq.onerror = () => reject(countReq.error);
   });
 }
 
@@ -151,6 +192,23 @@ async function startStream(conversationId) {
 // How often to merge in-progress stream data into the conversation (in chunks)
 const PERIODIC_MERGE_INTERVAL = 20;
 
+// Per-conversation merge lock to prevent races between periodic merge and stream-end
+const mergeLocks = new Map();
+
+async function withMergeLock(conversationId, fn) {
+  const prev = mergeLocks.get(conversationId) || Promise.resolve();
+  const next = prev.then(fn, fn); // run fn after previous settles (success or failure)
+  mergeLocks.set(conversationId, next);
+  try {
+    return await next;
+  } finally {
+    // Clean up if this was the last queued operation
+    if (mergeLocks.get(conversationId) === next) {
+      mergeLocks.delete(conversationId);
+    }
+  }
+}
+
 async function appendStreamChunk(conversationId, events, rawChunk) {
   const database = await getDB();
 
@@ -170,7 +228,9 @@ async function appendStreamChunk(conversationId, events, rawChunk) {
         putRequest.onsuccess = () => {
           // Periodically merge in-progress stream into conversation for crash safety
           if (record.rawChunks.length % PERIODIC_MERGE_INTERVAL === 0) {
-            mergeInProgressStream(conversationId, record.events);
+            withMergeLock(conversationId, () =>
+              mergeInProgressStream(conversationId, record.events)
+            );
           }
           resolve(record);
         };
@@ -189,6 +249,9 @@ async function appendStreamChunk(conversationId, events, rawChunk) {
   });
 }
 
+// Track consecutive merge failures per conversation
+const mergeFailures = new Map();
+
 // Merge in-progress stream into conversation so cached data stays current
 async function mergeInProgressStream(conversationId, events) {
   try {
@@ -197,9 +260,16 @@ async function mergeInProgressStream(conversationId, events) {
     message._partial = true;
     message._streaming = true;
     await mergeStreamedMessage(conversationId, message);
+    mergeFailures.delete(conversationId);
     console.log('[Claude Cache SW] Periodic merge: updated conversation with', events.length, 'events');
   } catch (err) {
-    console.warn('[Claude Cache SW] Periodic merge failed:', err);
+    const count = (mergeFailures.get(conversationId) || 0) + 1;
+    mergeFailures.set(conversationId, count);
+    console.warn('[Claude Cache SW] Periodic merge failed (attempt', count + '):', err);
+    if (count >= 3) {
+      chrome.action.setBadgeBackgroundColor({ color: '#F44336' });
+      chrome.action.setBadgeText({ text: '!' });
+    }
   }
 }
 
@@ -360,9 +430,11 @@ async function handleContentScriptMessage(type, data) {
         if (streamData) {
           console.log('[Claude Cache SW] Stream had', streamData.events?.length || 0, 'events,', streamData.rawChunks?.length || 0, 'raw chunks');
           if (streamData.events && streamData.events.length > 0) {
-            // Reconstruct the message and merge with existing conversation
+            // Reconstruct the message and merge with existing conversation (serialized)
             const reconstructed = reconstructMessageFromEvents(streamData.events);
-            await mergeStreamedMessage(data.conversationId, reconstructed);
+            await withMergeLock(data.conversationId, () =>
+              mergeStreamedMessage(data.conversationId, reconstructed)
+            );
           }
           // Also save raw buffer for recovery
           if (data.buffer) {
@@ -379,13 +451,24 @@ async function handleContentScriptMessage(type, data) {
           partialStream.error = data.error;
           partialStream.errorAt = Date.now();
           partialStream.finalBuffer = data.buffer;
+          // Persist updated stream record
+          const swDb = await getDB();
+          await new Promise((resolve, reject) => {
+            const tx = swDb.transaction(STORE_STREAMS, 'readwrite');
+            const store = tx.objectStore(STORE_STREAMS);
+            const req = store.put(partialStream);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+          });
           // Reconstruct and merge partial message so it's visible in cached conversation
           if (partialStream.events && partialStream.events.length > 0) {
             console.log('[Claude Cache SW] Reconstructing partial message from', partialStream.events.length, 'events');
             const partialMessage = reconstructMessageFromEvents(partialStream.events);
             partialMessage._partial = true;
             partialMessage._error = data.error;
-            await mergeStreamedMessage(data.conversationId, partialMessage);
+            await withMergeLock(data.conversationId, () =>
+              mergeStreamedMessage(data.conversationId, partialMessage)
+            );
           }
         }
         // Also save raw buffer separately

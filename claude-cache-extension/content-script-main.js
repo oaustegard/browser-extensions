@@ -13,7 +13,7 @@
 (function() {
   'use strict';
 
-  const VERSION = '0.5.2';
+  const VERSION = '0.5.3';
   const LOG_PREFIX = '[Claude Cache]';
   const DEBUG = true;
 
@@ -331,8 +331,8 @@
 
   // Notify on navigation
   let lastConversationId = getCurrentConversationId();
-  
-  const observer = new MutationObserver(() => {
+
+  function checkForNavigation() {
     const currentId = getCurrentConversationId();
     if (currentId !== lastConversationId) {
       log('Conversation changed:', lastConversationId, '->', currentId);
@@ -341,27 +341,30 @@
         currentId
       });
       lastConversationId = currentId;
-    }
-  });
 
-  // Start observing URL changes (SPA navigation)
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
-
-  // Also listen for popstate
-  window.addEventListener('popstate', () => {
-    const currentId = getCurrentConversationId();
-    if (currentId !== lastConversationId) {
-      log('Conversation changed (popstate):', lastConversationId, '->', currentId);
-      sendToServiceWorker('conversation-changed', {
-        previousId: lastConversationId,
-        currentId
-      });
-      lastConversationId = currentId;
+      // Proactively fetch new conversation after navigation
+      if (currentId) {
+        setTimeout(fetchAndCacheCurrentConversation, 500);
+      }
     }
-  });
+  }
+
+  // Detect SPA navigation by wrapping History API (much cheaper than MutationObserver)
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
+
+  history.pushState = function(...args) {
+    originalPushState.apply(this, args);
+    checkForNavigation();
+  };
+
+  history.replaceState = function(...args) {
+    originalReplaceState.apply(this, args);
+    checkForNavigation();
+  };
+
+  // Also listen for popstate (back/forward)
+  window.addEventListener('popstate', checkForNavigation);
 
   // Proactively fetch current conversation data
   async function fetchAndCacheCurrentConversation() {
@@ -445,32 +448,6 @@
     // Small delay to let page settle, then proactively cache
     setTimeout(fetchAndCacheCurrentConversation, 1000);
   }
-
-  // Also fetch when conversation changes (SPA navigation)
-  const originalObserverCallback = observer._callback;
-  observer.disconnect();
-  
-  const enhancedObserver = new MutationObserver(() => {
-    const currentId = getCurrentConversationId();
-    if (currentId !== lastConversationId) {
-      log('Conversation changed:', lastConversationId, '->', currentId);
-      sendToServiceWorker('conversation-changed', {
-        previousId: lastConversationId,
-        currentId
-      });
-      lastConversationId = currentId;
-      
-      // Proactively fetch new conversation after navigation
-      if (currentId) {
-        setTimeout(fetchAndCacheCurrentConversation, 500);
-      }
-    }
-  });
-  
-  enhancedObserver.observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
 
   log(`Content script initialized (v${VERSION})`);
 })();
