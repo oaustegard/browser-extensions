@@ -67,8 +67,10 @@ async function fetchAndUpdateUsage() {
     });
 
     if (!response.ok) {
-      /* Clear org ID cache on auth errors */
-      if (response.status === 401 || response.status === 403) {
+      /* Clear org ID cache only when truly logged out (401). A 403 here means
+         the cached org rejected this endpoint (e.g. an API-only org), not a
+         session problem — clearing it would just re-select the same org. */
+      if (response.status === 401) {
         log('Auth error, clearing org ID cache');
         await chrome.storage.local.remove('orgId');
       }
@@ -112,10 +114,18 @@ async function getOrganizationId() {
     }
     
     const data = await response.json();
-    
-    /* Extract org ID from response */
-    const orgId = data?.account?.memberships?.[0]?.organization?.uuid;
-    
+
+    /* Extract org ID from response. Prefer the membership whose organization
+       carries the "chat" capability — that's the claude.ai org the /usage
+       endpoint accepts. Accounts can now also have an API/Console-only org
+       (capabilities like ["api"]) that 403s on /usage, and it isn't always
+       at index 0. Fall back to the first membership if none advertise chat. */
+    const memberships = data?.account?.memberships || [];
+    const chatMembership = memberships.find(
+      m => m.organization?.capabilities?.includes('chat')
+    );
+    const orgId = (chatMembership || memberships[0])?.organization?.uuid;
+
     if (!orgId) {
       throw new Error('Org ID not found in bootstrap response');
     }
