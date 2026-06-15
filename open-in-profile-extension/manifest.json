@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Open Link in Profile",
+  "version": "1.0.0",
+  "description": "Right-click a link and open it in a different Chrome profile.",
+  "permissions": ["contextMenus", "nativeMessaging"],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
