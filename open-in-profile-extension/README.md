@@ -26,21 +26,36 @@ macOS/Linux, `python` on Windows).
 
 ## Install
 
+First, **put this folder somewhere permanent** (e.g. `~/chrome-extensions/open-in-profile-extension`)
+— not Downloads or a temp dir. Step 3 records the absolute path to the host
+script, so if you move the folder later you must re-run it.
+
+`native-host/` is the subfolder right inside this one — it contains the host
+script and `install.py`. After cloning the repo it's at
+`open-in-profile-extension/native-host/`; in the release zip it's inside the
+unzipped folder.
+
 1. `chrome://extensions` → enable **Developer mode** → **Load unpacked** →
-   select this `open-in-profile-extension/` folder.
+   select this `open-in-profile-extension/` folder (the one with `manifest.json`).
 2. Copy the **extension ID** shown on its card.
-3. From `native-host/`, register the host (writes the manifest for your OS,
-   and a registry key on Windows):
+3. Open a terminal in the `native-host/` subfolder and register the host
+   (writes the native-messaging manifest for your OS, plus a registry key on
+   Windows):
    ```bash
+   cd open-in-profile-extension/native-host
+
    python3 install.py <extension-id>     # macOS / Linux
    python  install.py <extension-id>     # Windows
    ```
 4. Reload the extension (↻ on its card), then right-click a link.
 
-> The extension ID changes if you reload unpacked from a different path. If the
-> menu shows "native host not found", re-run `install.py` with the current ID.
+> **If the menu says "native host not found":** re-run `install.py` with the
+> current extension ID. The ID changes when you reload unpacked from a
+> different path, and the recorded host path breaks if you moved the folder
+> after installing.
 
-Uninstall: `python3 native-host/uninstall.py` (then remove the extension).
+Uninstall: from `native-host/`, run `python3 uninstall.py` (then remove the
+extension at `chrome://extensions`).
 
 ## Protocol
 
