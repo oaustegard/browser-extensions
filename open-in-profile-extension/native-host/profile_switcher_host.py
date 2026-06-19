@@ -76,7 +76,12 @@ def list_profiles():
             state = json.load(f)
         cache = state.get("profile", {}).get("info_cache", {})
         for directory, meta in cache.items():
-            profiles.append({"dir": directory, "name": meta.get("name") or directory})
+            entry = {"dir": directory, "name": meta.get("name") or directory}
+            # Chrome stores the generated-avatar color as a signed ARGB int.
+            color = meta.get("default_avatar_fill_color")
+            if isinstance(color, int):
+                entry["color"] = color & 0xFFFFFF
+            profiles.append(entry)
     except (OSError, ValueError):
         # Fallback: scan the user-data dir for profile folders.
         base = user_data_dir()

@@ -70,6 +70,10 @@ Native messaging = 4-byte little-endian length prefix + UTF-8 JSON:
 
 ## Notes
 
+- **Colored dots, not avatars.** Chrome's `contextMenus` API can't render
+  images in menu items (Firefox's `menus` API can; Chrome's can't), so each
+  profile gets a colored dot — Chrome's own avatar color when the host can read
+  it from `Local State`, otherwise a stable color derived from the profile.
 - Targets Chrome **Stable**'s user-data dir and binary; edit `user_data_dir()`
   / `chrome_binary()` in the host for Beta/Canary.
 - Unpacked/dev-mode by design — the Web Store disallows the broad native host
