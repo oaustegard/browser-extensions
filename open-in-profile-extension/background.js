@@ -8,6 +8,48 @@ const HOST = "com.muninn.profile_switcher";
 const PARENT = "open-in-profile";
 const REFRESH = "open-in-profile-refresh";
 
+// Chrome's context-menu API can't render avatar images, so each profile gets a
+// colored dot instead: Chrome's own avatar color when the host can read it,
+// otherwise a stable color derived from the profile so they stay distinguishable.
+const PALETTE = [
+  { dot: "🔴", rgb: [211, 47, 47] },
+  { dot: "🟠", rgb: [245, 124, 0] },
+  { dot: "🟡", rgb: [251, 192, 45] },
+  { dot: "🟢", rgb: [56, 142, 60] },
+  { dot: "🔵", rgb: [25, 118, 210] },
+  { dot: "🟣", rgb: [142, 36, 170] },
+  { dot: "🟤", rgb: [121, 85, 72] },
+  { dot: "⚫", rgb: [66, 66, 66] },
+  { dot: "⚪", rgb: [224, 224, 224] },
+];
+
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function dotFor(profile) {
+  // profile.color is an ARGB integer from Chrome's Local State (may be negative).
+  if (typeof profile.color === "number") {
+    const r = (profile.color >> 16) & 0xff;
+    const g = (profile.color >> 8) & 0xff;
+    const b = profile.color & 0xff;
+    let best = 0;
+    let bestD = Infinity;
+    PALETTE.forEach((p, i) => {
+      const d = (p.rgb[0] - r) ** 2 + (p.rgb[1] - g) ** 2 + (p.rgb[2] - b) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    });
+    return PALETTE[best].dot;
+  }
+  // Fallback: stable, distinct color derived from the profile directory.
+  return PALETTE[hashString(profile.dir) % PALETTE.length].dot;
+}
+
 function buildMenus() {
   chrome.contextMenus.removeAll(() => {
     chrome.runtime.sendNativeMessage(HOST, { action: "list" }, (resp) => {
@@ -35,7 +77,7 @@ function buildMenus() {
         chrome.contextMenus.create({
           id: "prof:" + p.dir,
           parentId: PARENT,
-          title: p.name,
+          title: dotFor(p) + " " + p.name,
           contexts: ["link"],
         });
       }
