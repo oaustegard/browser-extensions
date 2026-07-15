@@ -1,5 +1,28 @@
 // content.js
 
+// Function to resolve a rule's selector to matching elements.
+// Selectors starting with "/" are treated as XPath (needed for text-based
+// matching like //span[normalize-space(.)="Promoted"], which plain CSS
+// cannot express). Everything else stays a CSS selector.
+function resolveSelector(selector) {
+  const trimmed = selector.trim();
+  if (trimmed.startsWith('/')) {
+    const result = document.evaluate(
+      trimmed,
+      document,
+      null,
+      XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+      null
+    );
+    const nodes = [];
+    for (let i = 0; i < result.snapshotLength; i++) {
+      nodes.push(result.snapshotItem(i));
+    }
+    return nodes;
+  }
+  return document.querySelectorAll(trimmed);
+}
+
 // Function to apply hiding rules
 function applyHidingRules() {
     chrome.storage.sync.get(null, (data) => {
@@ -7,7 +30,13 @@ function applyHidingRules() {
       const rules = data[url];
       if (rules) {
         rules.forEach(rule => {
-          const elements = document.querySelectorAll(rule.selector);
+          let elements;
+          try {
+            elements = resolveSelector(rule.selector);
+          } catch (e) {
+            console.error('Deshittification: invalid selector', rule.selector, e);
+            return;
+          }
           elements.forEach(el => {
             el.style.display = 'none';
           });
