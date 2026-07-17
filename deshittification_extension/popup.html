@@ -14,7 +14,13 @@
     <div id="rules">
         <h2>Hide Elements</h2>
         <ul id="rule-list"></ul>
-        <input type="text" id="selector-input" placeholder="CSS selector, or XPath starting with /">
+        <div id="input-row">
+            <select id="selector-type">
+                <option value="css">CSS</option>
+                <option value="xpath">XPath</option>
+            </select>
+            <input type="text" id="selector-input" placeholder="Selector">
+        </div>
     </div>
     <div id="buttons">
         <button id="add-rule">Add Rule</button>

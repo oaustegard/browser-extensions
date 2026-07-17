@@ -15,7 +15,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const rules = data[hostname] || [];
           // Avoid duplicate selectors
           if (!rules.some(rule => rule.selector === selector)) {
-            rules.push({ selector });
+            rules.push({ selector, type: 'css' });
             chrome.storage.sync.set({ [hostname]: rules }, () => {
               // Notify content script to re-apply rules
               chrome.tabs.sendMessage(tabs[0].id, { action: 'refreshRules' });

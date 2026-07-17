@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ruleList = document.getElementById('rule-list');
     const addRuleBtn = document.getElementById('add-rule');
     const selectorInput = document.getElementById('selector-input');
+    const selectorType = document.getElementById('selector-type');
     const pickElementBtn = document.getElementById('pick-element');
   
     // Get current tab's hostname
@@ -17,24 +18,29 @@ document.addEventListener('DOMContentLoaded', () => {
       // Load existing rules
       chrome.storage.sync.get(hostname, (data) => {
         const rules = data[hostname] || [];
-        rules.forEach(rule => addRuleToList(rule.selector));
+        rules.forEach(rule => addRuleToList(rule.selector, rule.type || 'css'));
       });
     });
-  
+
     // Add rule to list and storage
     addRuleBtn.addEventListener('click', () => {
       const selector = selectorInput.value.trim();
+      const type = selectorType.value;
       if (selector) {
-        addRuleToList(selector);
-        saveRule(selector);
+        addRuleToList(selector, type);
+        saveRule(selector, type);
         selectorInput.value = '';
       }
     });
-  
+
     // Function to add rule to UI list
-    function addRuleToList(selector) {
+    function addRuleToList(selector, type) {
       const li = document.createElement('li');
-      li.textContent = selector;
+      const tag = document.createElement('span');
+      tag.className = 'rule-type-tag';
+      tag.textContent = `[${type.toUpperCase()}]`;
+      li.appendChild(tag);
+      li.appendChild(document.createTextNode(selector));
       const removeBtn = document.createElement('button');
       removeBtn.textContent = 'X';
       removeBtn.style.marginLeft = '10px';
@@ -47,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   
     // Save rule to storage
-    function saveRule(selector) {
+    function saveRule(selector, type) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length === 0) return; // No active tab
         const url = new URL(tabs[0].url);
@@ -56,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const rules = data[hostname] || [];
           // Avoid adding duplicate selectors
           if (!rules.some(rule => rule.selector === selector)) {
-            rules.push({ selector });
+            rules.push({ selector, type });
             chrome.storage.sync.set({ [hostname]: rules }, () => {
               // Notify content script to re-apply rules
               chrome.tabs.sendMessage(tabs[0].id, { action: 'refreshRules' });
