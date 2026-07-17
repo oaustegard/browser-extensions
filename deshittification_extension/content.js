@@ -1,12 +1,13 @@
 // content.js
 
-// Function to resolve a rule's selector to matching elements.
-// Selectors starting with "/" are treated as XPath (needed for text-based
-// matching like //span[normalize-space(.)="Promoted"], which plain CSS
-// cannot express). Everything else stays a CSS selector.
-function resolveSelector(selector) {
-  const trimmed = selector.trim();
-  if (trimmed.startsWith('/')) {
+// Function to resolve a rule to matching elements. rule.type ('css' | 'xpath')
+// picked explicitly in the popup UI; older stored rules lack a type, so fall
+// back to sniffing a leading "/" for XPath (needed for text-based matching
+// like //span[normalize-space(.)="Promoted"], which plain CSS cannot express).
+function resolveSelector(rule) {
+  const trimmed = rule.selector.trim();
+  const type = rule.type || (trimmed.startsWith('/') ? 'xpath' : 'css');
+  if (type === 'xpath') {
     const result = document.evaluate(
       trimmed,
       document,
@@ -32,7 +33,7 @@ function applyHidingRules() {
         rules.forEach(rule => {
           let elements;
           try {
-            elements = resolveSelector(rule.selector);
+            elements = resolveSelector(rule);
           } catch (e) {
             console.error('Deshittification: invalid selector', rule.selector, e);
             return;
