@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
       siteNameElem.textContent = hostname;
   
       // Load existing rules
-      chrome.storage.sync.get(hostname, (data) => {
+      chrome.storage.local.get(hostname, (data) => {
         const rules = data[hostname] || [];
         rules.forEach(rule => addRuleToList(rule.selector, rule.type || 'css'));
       });
@@ -58,12 +58,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabs.length === 0) return; // No active tab
         const url = new URL(tabs[0].url);
         const hostname = url.hostname;
-        chrome.storage.sync.get(hostname, (data) => {
+        chrome.storage.local.get(hostname, (data) => {
           const rules = data[hostname] || [];
           // Avoid adding duplicate selectors
           if (!rules.some(rule => rule.selector === selector)) {
             rules.push({ selector, type });
-            chrome.storage.sync.set({ [hostname]: rules }, () => {
+            chrome.storage.local.set({ [hostname]: rules }, () => {
+              if (chrome.runtime.lastError) {
+                console.error('Deshittification: failed to save rule', chrome.runtime.lastError);
+                alert('Failed to save rule: ' + chrome.runtime.lastError.message);
+                return;
+              }
               // Notify content script to re-apply rules
               chrome.tabs.sendMessage(tabs[0].id, { action: 'refreshRules' });
             });
@@ -78,10 +83,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabs.length === 0) return; // No active tab
         const url = new URL(tabs[0].url);
         const hostname = url.hostname;
-        chrome.storage.sync.get(hostname, (data) => {
+        chrome.storage.local.get(hostname, (data) => {
           let rules = data[hostname] || [];
           rules = rules.filter(rule => rule.selector !== selector);
-          chrome.storage.sync.set({ [hostname]: rules }, () => {
+          chrome.storage.local.set({ [hostname]: rules }, () => {
+            if (chrome.runtime.lastError) {
+              console.error('Deshittification: failed to remove rule', chrome.runtime.lastError);
+              return;
+            }
             // Notify content script to re-apply rules
             chrome.tabs.sendMessage(tabs[0].id, { action: 'refreshRules' });
           });

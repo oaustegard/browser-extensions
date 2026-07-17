@@ -26,7 +26,7 @@ function resolveSelector(rule) {
 
 // Function to apply hiding rules
 function applyHidingRules() {
-    chrome.storage.sync.get(null, (data) => {
+    chrome.storage.local.get(null, (data) => {
       const url = window.location.hostname;
       const rules = data[url];
       if (rules) {

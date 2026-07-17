@@ -11,12 +11,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         const url = new URL(tabs[0].url);
         const hostname = url.hostname;
-        chrome.storage.sync.get(hostname, (data) => {
+        chrome.storage.local.get(hostname, (data) => {
           const rules = data[hostname] || [];
           // Avoid duplicate selectors
           if (!rules.some(rule => rule.selector === selector)) {
             rules.push({ selector, type: 'css' });
-            chrome.storage.sync.set({ [hostname]: rules }, () => {
+            chrome.storage.local.set({ [hostname]: rules }, () => {
               // Notify content script to re-apply rules
               chrome.tabs.sendMessage(tabs[0].id, { action: 'refreshRules' });
             });
