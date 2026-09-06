@@ -227,20 +227,22 @@ export function searchObjects(nodes, options, maxResults = 200) {
     osEnabled = false,
     osObject = null,
     osThreshold = 0.7,
-    osAlpha = 0.5,
-    similarityFn = null
+    similarity = null
   } = options;
-  
+
   const results = [];
-  const osObjectParsed = osEnabled && osObject ? JSON.parse(osObject) : null;
-  
+  // Hash the query once. It used to be re-extracted and re-hashed inside the
+  // per-node comparison, i.e. once for every node in the snapshot.
+  const osActive = osEnabled && !!similarity && !!osObject;
+  const querySignature = osActive ? similarity.signature(JSON.parse(osObject)) : null;
+
   for (const node of nodes) {
     let keyMatch = !propertySearch || !propertySearch[0];
     let valueMatch = !valueSearch || !valueSearch[0];
     let classMatches = !classSearch || !classSearch[0];
     let inspected = null;
-    let similarity = null;
-    
+    let score = null;
+
     // String nodes: only match value
     if (node.type === "string") {
       if (valueSearch && node.name && textMatches(String(node.name), ...valueSearch)) {
@@ -274,13 +276,15 @@ export function searchObjects(nodes, options, maxResults = 200) {
     }
     
     // Similarity search
-    if (osEnabled && similarityFn) {
+    if (osActive) {
       inspected = inspected || inspectObject(node, nodes);
-      similarity = inspected.object ? similarityFn(inspected.object, osObjectParsed, Number(osAlpha)) : 0;
+      score = inspected.object
+        ? similarity.compareSignatures(querySignature, similarity.signature(inspected.object))
+        : 0;
     }
-    
-    if (keyMatch && valueMatch && classMatches && (similarity === null || similarity >= Number(osThreshold))) {
-      results.push({ node, inspected, similarity });
+
+    if (keyMatch && valueMatch && classMatches && (score === null || score >= Number(osThreshold))) {
+      results.push({ node, inspected, similarity: score });
       if (results.length >= maxResults) return results;
     }
   }

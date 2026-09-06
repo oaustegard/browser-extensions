@@ -190,7 +190,6 @@ elements.btnSearchSnap.addEventListener("click", async () => {
       classSearch: elements.snapClass.value ? [elements.snapClass.value] : null,
       osEnabled: elements.snapSimilarity.checked,
       osThreshold: parseFloat(elements.snapThreshold.value),
-      osAlpha: 0.5,
       osIncludeValues: false
     });
     

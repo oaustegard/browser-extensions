@@ -135,13 +135,12 @@ async function doSearchSnapshot(tabId, data) {
     osEnabled,
     osObject,
     osThreshold,
-    osAlpha,
     osIncludeValues,
     maxResults = 200
   } = data;
-  
+
   const similarity = new ObjectSimilarity({ includeValues: osIncludeValues });
-  
+
   const matches = searchObjects(session.lastNodes, {
     propertySearch,
     valueSearch,
@@ -149,8 +148,7 @@ async function doSearchSnapshot(tabId, data) {
     osEnabled,
     osObject,
     osThreshold,
-    osAlpha,
-    similarityFn: similarity.hybridSimilarity
+    similarity
   }, maxResults);
   
   const reverseEdges = buildReverseEdges(session.lastNodes);
@@ -278,10 +276,9 @@ async function doStartBDHS(tabId, data) {
     classSearch,
     osEnabled,
     osObject,
-    osThreshold,
-    osAlpha
+    osThreshold
   } = data;
-  
+
   const similarity = new ObjectSimilarity();
   
   // Search function called at each breakpoint
@@ -296,8 +293,7 @@ async function doStartBDHS(tabId, data) {
       osEnabled,
       osObject,
       osThreshold,
-      osAlpha,
-      similarityFn: similarity.hybridSimilarity
+      similarity
     }, 10);
   };
   

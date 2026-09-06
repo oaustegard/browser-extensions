@@ -7,7 +7,7 @@ A browser extension port of [Wirebrowser's](https://github.com/fcavallarin/wireb
 - **Heap Snapshot Search** - Capture V8 heap snapshots and search by property, value, or class name
 - **Live Object Search** - Query live objects in memory via Runtime domain
 - **Origin Trace (BDHS)** - Find the user-land function that creates/mutates a target value
-- **Structural Similarity** - Find objects with similar shape using hybrid SimHash
+- **Structural Similarity** - Find objects with similar shape using MinHash over structural features
 
 ## Installation
 
@@ -44,7 +44,7 @@ wirebrowser-extension/
 │   ├── debugger-wrapper.js # High-level debugger operations
 │   ├── heap-snapshot.js    # Snapshot parsing and search
 │   ├── bdhs.js             # Breakpoint-driven heap search executor
-│   └── object-similarity.js # SimHash + structural similarity
+│   └── object-similarity.js # MinHash structural similarity
 └── devtools/
     ├── devtools.html/js    # DevTools panel registration
     └── panel.html/js       # Main UI
