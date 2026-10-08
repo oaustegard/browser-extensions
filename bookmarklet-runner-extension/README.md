@@ -138,7 +138,7 @@ Download the latest release from the [Releases page](https://github.com/oaustega
 
 ### From Source (Development)
 
-For development or contributing:
+For development:
 
 1. Clone this repository
 2. Open Chrome and navigate to `chrome://extensions/`
