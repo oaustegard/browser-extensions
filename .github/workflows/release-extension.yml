@@ -104,20 +104,30 @@ jobs:
           echo "Created: $ZIP_NAME"
           echo "zip_name=$ZIP_NAME" >> $GITHUB_ENV
 
+      - name: Write release notes
+        run: |
+          EXTENSION="${{ matrix.extension }}"
+          if [ -f "$EXTENSION/README.md" ]; then
+            cp "$EXTENSION/README.md" release-notes.md
+          else
+            cat > release-notes.md <<NOTES
+          Release of **$EXTENSION** version ${{ steps.version.outputs.version }}
+
+          ## Installation
+          1. Download the zip file below
+          2. Extract it to a folder
+          3. Open Chrome/Edge and go to \`chrome://extensions/\`
+          4. Enable "Developer mode"
+          5. Click "Load unpacked" and select the extracted folder
+          NOTES
+          fi
+
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ matrix.extension }}-v${{ steps.version.outputs.version }}
           name: ${{ matrix.extension }} v${{ steps.version.outputs.version }}
-          body: |
-            Release of **${{ matrix.extension }}** version ${{ steps.version.outputs.version }}
-
-            ## Installation
-            1. Download the zip file below
-            2. Extract it to a folder
-            3. Open Chrome/Edge and go to `chrome://extensions/`
-            4. Enable "Developer mode"
-            5. Click "Load unpacked" and select the extracted folder
+          body_path: release-notes.md
           files: ${{ env.zip_name }}
           draft: false
           prerelease: false
