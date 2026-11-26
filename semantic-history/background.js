@@ -31,7 +31,13 @@ async function ensureOffscreen() {
 
 async function callOffscreen(type, payload = {}) {
   await ensureOffscreen();
-  const r = await chrome.runtime.sendMessage({ target: "offscreen", type, ...payload });
+  // A just-created document may not have registered its listener yet: then no one answers
+  // (undefined, or a "Receiving end does not exist" error). Ask again for up to 2 s.
+  let r;
+  for (let i = 0; i < 10 && !r; i++) {
+    if (i) await new Promise((res) => setTimeout(res, 200));
+    r = await chrome.runtime.sendMessage({ target: "offscreen", type, ...payload }).catch(() => undefined);
+  }
   if (!r) throw new Error("offscreen document did not answer");
   if (!r.ok) throw new Error(r.error);
   return r.result;

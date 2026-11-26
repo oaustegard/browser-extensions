@@ -67,7 +67,7 @@ SparseUp v2 is [Linkup-Platform/linkup-sparseup-embed-v2](https://huggingface.co
 (Apache-2.0), a ModernBERT-base model that turns text into a weighted list of vocabulary terms. The extension runs
 an 8-bit copy of it with the WebGPU engine from
 [oaustegard/experiments `sparseup-v2/pack`](https://github.com/oaustegard/experiments/tree/main/sparseup-v2/pack),
-downloaded from `pub-38421218e82c4d4ba2bc53974c28b55d.r2.dev` and kept in the extension's Cache Storage.
+downloaded from `model-packs.austegard.workers.dev` (a Cloudflare Worker in front of R2) and kept in the extension's Cache Storage.
 Settings can remove it.
 
 Without WebGPU nothing is indexed and Topics grouping is unavailable; search uses Chrome history keywords only.

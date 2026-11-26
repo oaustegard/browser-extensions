@@ -10,7 +10,7 @@
 import { SparseEngine, toSparse } from "./wgsl/sparse-engine.js";
 import { Tokenizer } from "./vendor/tokenizers.mjs";
 
-export const PACK = "https://pub-38421218e82c4d4ba2bc53974c28b55d.r2.dev/sparseup-v2/int8-v1/";
+export const PACK = "https://model-packs.austegard.workers.dev/sparseup-v2/int8-v1/";
 export const CACHE = "semantic-history-sparseup-int8-v1";
 
 // Fetch through the Cache API, reporting bytes as they arrive.
