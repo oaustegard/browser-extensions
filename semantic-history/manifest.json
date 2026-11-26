@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SemanticHistory",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Semantic search over the pages you read, with a local SparseUp model on your GPU. Nothing leaves the browser.",
   "minimum_chrome_version": "116",
   "permissions": ["sidePanel", "tabs", "history", "sessions", "scripting", "storage", "unlimitedStorage", "offscreen", "alarms", "favicon"],

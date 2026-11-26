@@ -85,10 +85,4 @@ from the cache.
 | `lib/sensitive.js` | exclusion list and sensitive-page rules |
 | `lib/model.js` | model loader (Cache Storage) and tokenizer |
 | `lib/wgsl/` | engine and kernels, copied from `oaustegard/experiments` (`_lib/wgsl`, `sparseup-v2/pack/web/engine.js`) |
-| `lib/vendor/` | `@huggingface/tokenizers` 0.2.0 and `@mozilla/readability` 0.6.0 (both Apache-2.0), `relay.js` |
-
-## Developer diagnostics
-
-`relay.js` belongs to the author's GPU Bridge setup (`oaustegard/gpu-bridge-comms`). With a bridge token saved
-in Settings → Diagnostics and the switch on, the panel and the model page send timings, counts and errors (never
-URLs, titles or page text) to that repo's logs. It does nothing without a token, and other users have no token.
+| `lib/vendor/` | `@huggingface/tokenizers` 0.2.0 and `@mozilla/readability` 0.6.0 (both Apache-2.0) |

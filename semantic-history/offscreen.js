@@ -4,10 +4,9 @@
 
 import * as db from "./lib/db.js";
 import { loadModel, modelCached } from "./lib/model.js";
-import { BUILD, hostOf } from "./lib/util.js";
+import { hostOf } from "./lib/util.js";
 
-const relay = self.Relay?.start?.({ page: "semantic-history-offscreen", build: BUILD }) ?? null;
-const log = (msg, attrs) => { relay?.log(msg, attrs); };
+const log = (msg, attrs) => console.info(msg, attrs);
 
 const CHUNK_TOKENS = 380;     // per chunk, before prefix and special tokens (the model reads 512)
 const MAX_CHUNKS = 12;        // per page: about 3,500 words
@@ -45,7 +44,7 @@ async function getModel() {
       return model;
     } catch (e) {
       modelP = null;
-      relay?.error("model load failed", { message: String(e?.message || e) });
+      console.error("model load failed", { message: String(e?.message || e) });
       setModelState({ state: "error", message: String(e?.message || e) });
       throw e;
     }
@@ -312,7 +311,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
   busy++;
   Promise.resolve().then(() => h(msg))
     .then((result) => respond({ ok: true, result }))
-    .catch((e) => { relay?.error(`${msg.type} failed`, { message: String(e?.message || e) }); respond({ ok: false, error: String(e?.message || e) }); })
+    .catch((e) => { console.error(`${msg.type} failed`, { message: String(e?.message || e) }); respond({ ok: false, error: String(e?.message || e) }); })
     .finally(() => { busy--; lastUse = Date.now(); });
   return true;
 });

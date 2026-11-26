@@ -1,7 +1,5 @@
 // Small helpers shared by the service worker, the offscreen document and the side panel.
 
-export const BUILD = "2026-11-26-1";
-
 // FNV-1a over a string, as 8 hex digits. Used to skip re-encoding a page whose text has not changed.
 export function hash(s) {
   let h = 0x811c9dc5;

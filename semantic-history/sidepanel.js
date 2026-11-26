@@ -3,9 +3,8 @@
 
 import * as db from "./lib/db.js";
 import { DEFAULT_EXCLUDES, cleanPattern, matchesExclude, urlVerdict } from "./lib/sensitive.js";
-import { BUILD, getSettings, hostOf, setSettings } from "./lib/util.js";
+import { getSettings, hostOf, setSettings } from "./lib/util.js";
 
-const relay = self.Relay?.start?.({ page: "semantic-history-panel", build: BUILD }) ?? null;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const favicon = (url) => `/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`;
@@ -100,7 +99,7 @@ async function activate(item) {
       if (open) { await chrome.tabs.update(open.id, { active: true }); await chrome.windows.update(open.windowId, { focused: true }); }
       else await chrome.tabs.create({ url: item.url });
     }
-  } catch (e) { relay?.warn("activate failed", { message: String(e?.message || e) }); }
+  } catch (e) { console.warn("activate failed", { message: String(e?.message || e) }); }
 }
 
 function rowHtml(item, i, { snippet = "", terms = null } = {}) {
@@ -215,7 +214,7 @@ async function overview() {
     groups.push({ label: "Other", items: [...r.other.map((k) => byKey.get(k)), ...ineligible].sort(byRecent) });
     renderGroups(groups);
   } catch (e) {
-    relay?.error("group failed", { message: String(e?.message || e) });
+    console.error("group failed", { message: String(e?.message || e) });
     renderGroups([{ label: "Open tabs", items: open.sort(byRecent) }, { label: "Closed and read", items: rest.sort(byRecent) }]);
   }
 }
@@ -250,7 +249,7 @@ async function runSearch(query) {
     setRows(list);
     renderStatus(`${r.ms} ms`);
   } catch (e) {
-    relay?.error("search failed", { message: String(e?.message || e) });
+    console.error("search failed", { message: String(e?.message || e) });
     keywordFallback(query, seq, range, tabByUrl);
   }
 }
@@ -316,8 +315,6 @@ async function showSettings() {
   const est = await navigator.storage.estimate().catch(() => null);
   $("modelInfo").textContent = `SparseUp v2 (linkup-sparseup-embed-v2), int8 WebGPU pack, about 151 MB, kept in this browser's cache. State: ${model.state}.` +
     (est ? ` Extension storage in use: ${(est.usage / 1e6).toFixed(0)} MB.` : "");
-  $("bridgeToken").value = localStorage.getItem("gpubridge:token") || "";
-  $("relayOn").checked = localStorage.getItem("relay:on:/sidepanel.html") === "1";
   $("settings").hidden = false;
   $("main").hidden = true;
   document.querySelector("header").hidden = true;
@@ -366,21 +363,13 @@ $("removeModel").addEventListener("click", async () => {
   await caches.delete("semantic-history-sparseup-int8-v1");
   showSettings();
 });
-$("saveDiag").addEventListener("click", () => {
-  const tok = $("bridgeToken").value.trim();
-  if (tok) localStorage.setItem("gpubridge:token", tok); else localStorage.removeItem("gpubridge:token");
-  for (const p of ["/sidepanel.html", "/offscreen.html"]) {
-    if ($("relayOn").checked) localStorage.setItem("relay:on:" + p, "1"); else localStorage.removeItem("relay:on:" + p);
-  }
-});
-
 // ---------- start ----------
 
 (async () => {
   const { mode: m } = await chrome.storage.local.get("mode");
   if (m) mode = m;
   for (const x of document.querySelectorAll("#modes button")) x.setAttribute("aria-selected", String(x.dataset.mode === mode));
-  try { model = (await offscreen("status")).model; } catch (e) { relay?.warn("status failed", { message: String(e?.message || e) }); }
+  try { model = (await offscreen("status")).model; } catch (e) { console.warn("status failed", { message: String(e?.message || e) }); }
   renderStatus();
   refresh();
   if (model.state === "idle") offscreen("warm").catch(() => {});

@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SemanticHistory</title>
 <link rel="stylesheet" href="sidepanel.css">
-<script src="lib/vendor/relay.js"></script>
 <script type="module" src="sidepanel.js"></script>
 </head>
 <body>
@@ -71,12 +70,6 @@
   <h3>Model</h3>
   <p id="modelInfo"></p>
   <div class="buttons"><button id="removeModel" class="danger">Remove the downloaded model</button></div>
-
-  <h3>Diagnostics</h3>
-  <small>For the extension's author: sends timings, counts and errors from this browser (never URLs, titles or page text) to the author's GPU Bridge log repository. Without a bridge token it does nothing.</small>
-  <label class="field">GPU Bridge token <input id="bridgeToken" type="password" autocomplete="off"></label>
-  <label class="toggle"><input id="relayOn" type="checkbox"> Send diagnostics (starts the next time the side panel opens)</label>
-  <div class="buttons"><button id="saveDiag">Save</button></div>
 
   <div class="buttons"><button id="closeSettings">Done</button></div>
 </section>
