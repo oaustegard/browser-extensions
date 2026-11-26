@@ -3,6 +3,7 @@
 Semantic search over the pages you have read in Chrome, in the side panel. Pages are embedded on your GPU by
 SparseUp v2, a learned sparse retrieval model, and stored in the extension's IndexedDB. The only network request
 the extension makes is the one-time model download; page text, titles and URLs stay in the browser.
+See [PRIVACY.md](PRIVACY.md) for the privacy policy.
 
 ## Install
 
@@ -86,3 +87,5 @@ from the cache.
 | `lib/model.js` | model loader (Cache Storage) and tokenizer |
 | `lib/wgsl/` | engine and kernels, copied from `oaustegard/experiments` (`_lib/wgsl`, `sparseup-v2/pack/web/engine.js`) |
 | `lib/vendor/` | `@huggingface/tokenizers` 0.2.0 and `@mozilla/readability` 0.6.0 (both Apache-2.0) |
+| `PRIVACY.md` | privacy policy |
+| `NOTICE`, `LICENSE-*` | third-party credits and licence texts |

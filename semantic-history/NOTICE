@@ -1,0 +1,25 @@
+SemanticHistory
+Copyright (c) 2026 Oskar Austegard
+
+This extension includes or downloads the following third-party components.
+
+1. linkup-sparseup-embed-v2 (model weights and tokenizer, downloaded at first use; not in this package)
+   https://huggingface.co/Linkup-Platform/linkup-sparseup-embed-v2
+   Copyright Linkup. Licensed under the Apache License, Version 2.0.
+   Modified: linear layers and the token table quantized to int8 per output row by
+   sparseup-v2/pack/pack.py in https://github.com/oaustegard/experiments. Tokenizer files unchanged.
+
+2. @huggingface/tokenizers 0.2.0 (lib/vendor/tokenizers.mjs)
+   https://github.com/huggingface/tokenizers.js
+   Copyright Hugging Face. Licensed under the Apache License, Version 2.0.
+
+3. @mozilla/readability 0.6.0 (lib/vendor/Readability.js)
+   https://github.com/mozilla/readability
+   Copyright (c) 2010 Arc90 Inc. Licensed under the Apache License, Version 2.0.
+
+4. WebGPU engine and kernels (lib/wgsl/)
+   From https://github.com/oaustegard/experiments (_lib/wgsl, sparseup-v2/pack/web/engine.js)
+   Copyright (c) 2026 Oskar Austegard. Licensed under the MIT License.
+
+The Apache License, Version 2.0 is at https://www.apache.org/licenses/LICENSE-2.0
+and in LICENSE-APACHE-2.0 in this folder; the MIT License is in LICENSE-MIT.
