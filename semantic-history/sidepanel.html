@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SemanticHistory</title>
+<link rel="stylesheet" href="sidepanel.css">
+<script src="lib/vendor/relay.js"></script>
+<script type="module" src="sidepanel.js"></script>
+</head>
+<body>
+<header>
+  <div class="searchrow">
+    <input id="q" type="search" placeholder="Search pages you've read" autocomplete="off" spellcheck="false" autofocus>
+    <button id="gear" class="icon" title="Settings" aria-label="Settings">⚙</button>
+  </div>
+  <div class="filters">
+    <select id="when" aria-label="Date range">
+      <option value="any">Any time</option>
+      <option value="today">Today</option>
+      <option value="7">Past 7 days</option>
+      <option value="30">Past 30 days</option>
+      <option value="custom">Custom…</option>
+    </select>
+    <span id="custom" hidden>
+      <input id="from" type="date" aria-label="From"> – <input id="to" type="date" aria-label="To">
+    </span>
+    <label class="toggle"><input id="openOnly" type="checkbox"> Open tabs only</label>
+  </div>
+  <div class="modes" id="modes" role="tablist" aria-label="Group tabs by">
+    <span class="modes-label">Group by</span>
+    <button data-mode="topics" role="tab">Topics</button>
+    <button data-mode="windows" role="tab">Windows</button>
+    <button data-mode="recent" role="tab">Recent</button>
+  </div>
+  <div id="status" class="status" aria-live="polite"></div>
+</header>
+
+<main id="main"></main>
+
+<section id="settings" hidden>
+  <h2>Settings</h2>
+  <label class="toggle"><input id="paused" type="checkbox"> Pause indexing</label>
+  <label class="toggle"><input id="autoSensitive" type="checkbox"> Skip pages and sites that look sensitive (logins, payments, banking, medical). The list below always applies.</label>
+  <label class="field">Index a page after it has been the active tab for
+    <input id="dwellSec" type="number" min="2" max="300" step="1"> seconds</label>
+  <label class="field">Topic groups: <small>broader</small>
+    <input id="groupThreshold" type="range" min="0.05" max="0.5" step="0.01" aria-label="Topic group tightness">
+    <small>tighter</small></label>
+
+  <h3>Never index these sites</h3>
+  <small>One per line: a host (<code>chase.com</code>, which also covers <code>secure.chase.com</code>), <code>*.bank</code> (any host ending in .bank), <code>mychart.*</code> (any host whose name starts with mychart.), or a host with a path (<code>discord.com/channels</code>). Saving removes already indexed pages from these sites.</small>
+  <textarea id="excludes" rows="8" spellcheck="false"></textarea>
+  <div class="buttons">
+    <button id="saveExcludes">Save list</button>
+    <button id="excludeCurrent">Exclude the current tab's site</button>
+    <button id="resetExcludes">Restore defaults</button>
+  </div>
+
+  <h3>Recently skipped</h3>
+  <ul id="skips" class="skips"></ul>
+
+  <h3>Index</h3>
+  <p id="counts"></p>
+  <div class="buttons">
+    <button id="indexCurrent">Index the current tab now</button>
+    <button id="sweepNow">Remove pages deleted from history now</button>
+    <button id="clearIndex" class="danger">Clear the index</button>
+  </div>
+
+  <h3>Model</h3>
+  <p id="modelInfo"></p>
+  <div class="buttons"><button id="removeModel" class="danger">Remove the downloaded model</button></div>
+
+  <h3>Diagnostics</h3>
+  <small>For the extension's author: sends timings, counts and errors from this browser (never URLs, titles or page text) to the author's GPU Bridge log repository. Without a bridge token it does nothing.</small>
+  <label class="field">GPU Bridge token <input id="bridgeToken" type="password" autocomplete="off"></label>
+  <label class="toggle"><input id="relayOn" type="checkbox"> Send diagnostics (starts the next time the side panel opens)</label>
+  <div class="buttons"><button id="saveDiag">Save</button></div>
+
+  <div class="buttons"><button id="closeSettings">Done</button></div>
+</section>
+</body>
+</html>
